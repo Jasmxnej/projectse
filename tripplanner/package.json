@@ -12,7 +12,7 @@
     "@ljharb/tsconfig": "^0.3.2",
     "@tsconfig/node22": "^22.0.2",
     "@types/axios": "^0.9.36",
-    "@types/node": "^24.0.14",
+    "@types/node": "^24.3.0",
     "@types/vue": "^2.0.0",
     "@vitejs/plugin-vue": "^5.2.3",
     "@vue/tsconfig": "^0.5.1",
