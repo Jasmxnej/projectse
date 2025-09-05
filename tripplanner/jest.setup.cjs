@@ -53,14 +53,7 @@ const localStorageMock = {
 global.localStorage = localStorageMock;
 
 
-delete global.window.location;
-global.window.location = {
-  origin: 'http://localhost:3000',
-  href: 'http://localhost:3000',
-  pathname: '/',
-  search: '',
-  hash: '',
-};
+// Location is already set by jsdom
 
 // Mock import.meta.env for Vite environment variables
 global.import = {
