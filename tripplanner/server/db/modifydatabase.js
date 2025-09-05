@@ -952,13 +952,46 @@ async function updateFlightsTableSchema(connection) {
       SELECT COUNT(*) AS count FROM INFORMATION_SCHEMA.COLUMNS
       WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'flights' AND COLUMN_NAME = 'bag_weight_unit'
     `);
-    
+
     if (bagWeightUnitResult[0].count === 0) {
       await connection.query(`
         ALTER TABLE flights ADD COLUMN bag_weight_unit VARCHAR(20) DEFAULT NULL
       `);
     }
-    
+
+    // Add leg_number column
+    const [legNumberResult] = await connection.query(`
+      SELECT COUNT(*) AS count FROM INFORMATION_SCHEMA.COLUMNS
+      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'flights' AND COLUMN_NAME = 'leg_number'
+    `);
+
+    if (legNumberResult[0].count === 0) {
+      await connection.query(`
+        ALTER TABLE flights ADD COLUMN leg_number INT DEFAULT 1
+      `);
+    }
+
+    // Add flight_type column
+    const [flightTypeResult] = await connection.query(`
+      SELECT COUNT(*) AS count FROM INFORMATION_SCHEMA.COLUMNS
+      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'flights' AND COLUMN_NAME = 'flight_type'
+    `);
+
+    if (flightTypeResult[0].count === 0) {
+      await connection.query(`
+        ALTER TABLE flights ADD COLUMN flight_type ENUM('one-way', 'round-trip', 'multi-city') DEFAULT 'one-way'
+      `);
+    } else {
+      // Update existing ENUM to include 'multi-city' if not already present
+      try {
+        await connection.query(`
+          ALTER TABLE flights MODIFY COLUMN flight_type ENUM('one-way', 'round-trip', 'multi-city') DEFAULT 'one-way'
+        `);
+      } catch (enumError) {
+        console.log('Flight type ENUM already includes multi-city or update not needed');
+      }
+    }
+
     console.log('Updated flights table schema if needed.');
   } catch (error) {
     console.error('Error updating flights table schema:', error);

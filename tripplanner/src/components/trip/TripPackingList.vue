@@ -123,6 +123,8 @@ const props = defineProps({
   }
 });
 
+const emit = defineEmits(['add-to-packing', 'data-updated']);
+
 // Packing list
 const packingList = ref<{name: string, quantity: number, packed: boolean}[]>([]);
 const categorizedPackingList = ref<any>({ categories: [] });
@@ -230,6 +232,7 @@ const loadPackingList = async () => {
       // Check if response has categorized structure
       if (response.data && response.data.categories) {
         categorizedPackingList.value = response.data;
+        emit('data-updated', response.data);
         return;
       }
       // Check if response is an array (old format)

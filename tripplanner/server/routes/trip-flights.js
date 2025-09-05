@@ -6,18 +6,30 @@ const router = express.Router({ mergeParams: true });
 // Save flights for a trip
 router.post('/', async (req, res) => {
   const { tripId } = req.params;
-  const { flights, dictionaries } = req.body;
+  const { flights, dictionaries, tripType } = req.body;
 
   const pool = getPool();
   const connection = await pool.getConnection();
   try {
     await connection.beginTransaction();
-    
+
     // Ensure trip_id is treated as a string
     const tripIdStr = String(tripId);
     await connection.query("DELETE FROM flights WHERE trip_id = ?", [tripIdStr]);
-    
-    for (const flight of flights) {
+
+    // Use the trip type passed from client, fallback to determining based on number of flights
+    let flightType = tripType || 'one-way';
+    if (!tripType) {
+      if (flights.length === 2) {
+        flightType = 'round-trip';
+      } else if (flights.length > 2) {
+        flightType = 'multi-city';
+      }
+    }
+
+    for (let i = 0; i < flights.length; i++) {
+      const flight = flights[i];
+      const legNumber = i + 1;
       // Handle case where flight might not have all expected properties
       if (!flight || !flight.itineraries || flight.itineraries.length === 0) {
         console.warn('Skipping invalid flight data:', flight);
@@ -160,13 +172,13 @@ router.post('/', async (req, res) => {
       // Insert flight data with new schema columns
       await connection.query(
         `INSERT INTO flights (
-          trip_id, airline, flight_number, from_city, to_city,
+          trip_id, leg_number, flight_type, airline, flight_number, from_city, to_city,
           departure_time, departure_date, arrival_time, arrival_date,
           duration, price, currency, stops, traveler_type, fare_class,
           baggage_quantity, bag_weight, bag_weight_unit, aircraft_code, fare_basis
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
-          tripIdStr, airline, firstSegment.number || '', fromCity, toCity,
+          tripIdStr, legNumber, flightType, airline, firstSegment.number || '', fromCity, toCity,
           departureTime, departureDate, arrivalTime, arrivalDate,
           duration, totalPrice, currency, stops, travelerType, fareClass,
           baggageQuantity, '', '', aircraftCode, fareBasis

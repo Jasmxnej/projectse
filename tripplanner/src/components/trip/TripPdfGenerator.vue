@@ -27,6 +27,10 @@ const props = defineProps({
     type: Object,
     default: null
   },
+  flights: {
+    type: Array,
+    default: () => []
+  },
   hotel: {
     type: Object,
     default: null
@@ -159,39 +163,70 @@ const generateCompletePdf = async () => {
     titleSection.style.marginBottom = '30px';
     titleSection.style.textAlign = 'center';
     titleSection.style.padding = '20px';
-    titleSection.style.backgroundColor = '#f8f9fa';
-    titleSection.style.borderRadius = '8px';
+    titleSection.style.backgroundColor = '#f8fafc';
+    titleSection.style.borderRadius = '12px';
     titleSection.style.border = '1px solid #e2e8f0';
-    
+    titleSection.style.boxShadow = '0 1px 3px rgba(0, 0, 0, 0.1)';
+
     titleSection.innerHTML = `
-      <h1 style="font-size: 28px; font-weight: bold; margin-bottom: 15px; color: #2d3748;">Trip Summary: ${props.trip?.name || props.trip?.destination}</h1>
-      <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 20px; margin-top: 20px;">
-        <div style="background-color: #ffffff; border-radius: 12px; padding: 20px; border: 1px solid #e5e7eb;">
-          <h2 style="font-size: 20px; font-weight: bold; color: #374151; margin-bottom: 15px;">Trip Details</h2>
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 14px; line-height: 1.6;">
-            <p><strong>Destination:</strong> ${props.trip?.destination}</p>
-            <p><strong>Dates:</strong> ${formatDate(props.trip?.start_date)} to ${formatDate(props.trip?.end_date)}</p>
-            <p><strong>Budget:</strong> ${formatPrice(props.trip?.budget)}</p>
-            <p><strong>Group Size:</strong> ${props.trip?.group_size || 1} people</p>
-            <p><strong>Transport:</strong> ${props.trip?.transport || 'Not specified'}</p>
-            ${props.trip?.activities ? `<p style="grid-column: 1 / -1;"><strong>Interests:</strong> ${Array.isArray(props.trip.activities) ? props.trip.activities.join(', ') : props.trip.activities}</p>` : ''}
-            ${props.trip?.other_activity ? `<p style="grid-column: 1 / -1;"><strong>Other Activities:</strong> ${props.trip.other_activity}</p>` : ''}
-            ${props.trip?.special_needs ? `<p style="grid-column: 1 / -1;"><strong>Special Needs:</strong> ${props.trip.special_needs}</p>` : ''}
+      <h1 style="font-size: 32px; font-weight: bold; margin-bottom: 20px; color: #1e293b; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);">Trip Summary: ${props.trip?.name || props.trip?.destination}</h1>
+      <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 24px; margin-top: 24px;">
+        <div style="background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%); border-radius: 16px; padding: 24px; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
+          <h2 style="font-size: 24px; font-weight: bold; color: #1e293b; margin-bottom: 20px; display: flex; align-items: center;">
+            <span style="background-color: #3b82f6; color: white; padding: 4px 8px; border-radius: 6px; font-size: 14px; margin-right: 12px;">📍</span>
+            Trip Details
+          </h2>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; font-size: 15px; line-height: 1.6;">
+            <div style="background-color: #f1f5f9; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0;">
+              <strong style="color: #475569;">Destination:</strong><br>
+              <span style="color: #1e293b; font-weight: 500;">${props.trip?.destination}</span>
+            </div>
+            <div style="background-color: #f1f5f9; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0;">
+              <strong style="color: #475569;">Dates:</strong><br>
+              <span style="color: #1e293b; font-weight: 500;">${formatDate(props.trip?.start_date)} to ${formatDate(props.trip?.end_date)}</span>
+            </div>
+            <div style="background-color: #f1f5f9; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0;">
+              <strong style="color: #475569;">Budget:</strong><br>
+              <span style="color: #1e293b; font-weight: 500;">${formatPrice(props.trip?.budget)}</span>
+            </div>
+            <div style="background-color: #f1f5f9; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0;">
+              <strong style="color: #475569;">Group Size:</strong><br>
+              <span style="color: #1e293b; font-weight: 500;">${props.trip?.group_size || 1} people</span>
+            </div>
+            <div style="background-color: #f1f5f9; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0; grid-column: 1 / -1;">
+              <strong style="color: #475569;">Transport:</strong><br>
+              <span style="color: #1e293b; font-weight: 500;">${props.trip?.transport || 'Not specified'}</span>
+            </div>
+            ${props.trip?.activities ? `<div style="background-color: #f1f5f9; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0; grid-column: 1 / -1;">
+              <strong style="color: #475569;">Interests:</strong><br>
+              <span style="color: #1e293b; font-weight: 500;">${Array.isArray(props.trip.activities) ? props.trip.activities.join(', ') : props.trip.activities}</span>
+            </div>` : ''}
+            ${props.trip?.other_activity ? `<div style="background-color: #f1f5f9; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0; grid-column: 1 / -1;">
+              <strong style="color: #475569;">Other Activities:</strong><br>
+              <span style="color: #1e293b; font-weight: 500;">${props.trip.other_activity}</span>
+            </div>` : ''}
+            ${props.trip?.special_needs ? `<div style="background-color: #f1f5f9; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0; grid-column: 1 / -1;">
+              <strong style="color: #475569;">Special Needs:</strong><br>
+              <span style="color: #1e293b; font-weight: 500;">${props.trip.special_needs}</span>
+            </div>` : ''}
           </div>
         </div>
-        <div style="background-color: #ffffff; border-radius: 12px; padding: 20px; border: 1px solid #e5e7eb;">
-          <h2 style="font-size: 20px; font-weight: bold; color: #374151; margin-bottom: 15px;">Budget Overview</h2>
-          <div style="text-align: center; margin-bottom: 15px;">
-            <p style="font-size: 12px; color: #6b7280; margin-bottom: 5px;">Total Budget</p>
-            <p style="font-size: 24px; font-weight: bold; color: #374151;">${formatPrice(props.trip?.budget || 0)}</p>
+        <div style="background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%); border-radius: 16px; padding: 24px; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
+          <h2 style="font-size: 24px; font-weight: bold; color: #1e293b; margin-bottom: 20px; display: flex; align-items: center;">
+            <span style="background-color: #10b981; color: white; padding: 4px 8px; border-radius: 6px; font-size: 14px; margin-right: 12px;">💰</span>
+            Budget Overview
+          </h2>
+          <div style="text-align: center; margin-bottom: 20px; background-color: #f1f5f9; padding: 16px; border-radius: 12px; border: 1px solid #e2e8f0;">
+            <p style="font-size: 14px; color: #64748b; margin-bottom: 8px; font-weight: 500;">Total Budget</p>
+            <p style="font-size: 28px; font-weight: bold; color: #1e293b; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);">${formatPrice(props.trip?.budget || 0)}</p>
           </div>
-          <div style="text-align: center; margin-bottom: 15px;">
-            <p style="font-size: 12px; color: #6b7280; margin-bottom: 5px;">Planned Expenses</p>
-            <p style="font-size: 20px; font-weight: bold; color: #0d9488;">${formatPrice(getBudgetData()?.plannedExpenses?.total || 0)}</p>
+          <div style="text-align: center; margin-bottom: 20px; background-color: #ecfdf5; padding: 16px; border-radius: 12px; border: 1px solid #d1fae5;">
+            <p style="font-size: 14px; color: #059669; margin-bottom: 8px; font-weight: 500;">Planned Expenses</p>
+            <p style="font-size: 24px; font-weight: bold; color: #065f46;">${formatPrice(getBudgetData()?.plannedExpenses?.total || 0)}</p>
           </div>
-          <div style="text-align: center;">
-            <p style="font-size: 12px; color: #6b7280; margin-bottom: 5px;">Remaining</p>
-            <p style="font-size: 20px; font-weight: bold; color: ${((props.trip?.budget || 0) - (getBudgetData()?.plannedExpenses?.total || 0)) >= 0 ? '#22c55e' : '#ef4444'};">${formatPrice((props.trip?.budget || 0) - (getBudgetData()?.plannedExpenses?.total || 0))}</p>
+          <div style="text-align: center; background-color: ${((props.trip?.budget || 0) - (getBudgetData()?.plannedExpenses?.total || 0)) >= 0 ? '#f0fdf4' : '#fef2f2'}; padding: 16px; border-radius: 12px; border: 1px solid ${((props.trip?.budget || 0) - (getBudgetData()?.plannedExpenses?.total || 0)) >= 0 ? '#dcfce7' : '#fecaca'};">
+            <p style="font-size: 14px; color: ${((props.trip?.budget || 0) - (getBudgetData()?.plannedExpenses?.total || 0)) >= 0 ? '#166534' : '#dc2626'}; margin-bottom: 8px; font-weight: 500;">Remaining</p>
+            <p style="font-size: 24px; font-weight: bold; color: ${((props.trip?.budget || 0) - (getBudgetData()?.plannedExpenses?.total || 0)) >= 0 ? '#166534' : '#dc2626'};">${formatPrice((props.trip?.budget || 0) - (getBudgetData()?.plannedExpenses?.total || 0))}</p>
           </div>
         </div>
       </div>
@@ -209,73 +244,114 @@ const generateCompletePdf = async () => {
     const budgetData = getBudgetData();
     
     // Add Flight Section
-    if (flight) {
+    const flights = props.flights || (props.flight ? [props.flight] : []);
+    if (flights && flights.length > 0) {
       const flightSection = createSectionElement('Flight Details');
-      
-      let airlineName = 'Unknown Airline';
-      if (flight.airline && flight.airline !== 'Unknown Airline') {
-        airlineName = flight.airline;
-      } else if (flight.dictionaries && flight.itineraries) {
-        const firstSegment = flight.itineraries[0]?.segments[0];
-        if (firstSegment && firstSegment.carrierCode && flight.dictionaries.carriers) {
-          const carrierName = flight.dictionaries.carriers[firstSegment.carrierCode];
-          airlineName = carrierName || `${firstSegment.carrierCode} Airlines`;
+
+      flights.forEach((flight: any, index: number) => {
+        let airlineName = 'Unknown Airline';
+        if (flight.airline && flight.airline !== 'Unknown Airline') {
+          airlineName = flight.airline;
+        } else if (flight.dictionaries && flight.itineraries) {
+          const firstSegment = flight.itineraries[0]?.segments[0];
+          if (firstSegment && firstSegment.carrierCode && flight.dictionaries.carriers) {
+            const carrierName = flight.dictionaries.carriers[firstSegment.carrierCode];
+            airlineName = carrierName || `${firstSegment.carrierCode} Airlines`;
+          }
+        } else if (flight.itineraries && flight.itineraries[0]?.segments[0]?.carrierCode) {
+          const carrierCode = flight.itineraries[0].segments[0].carrierCode;
+          airlineName = `${carrierCode} Airlines`;
+        } else if (flight.validatingAirlineCodes && flight.validatingAirlineCodes.length > 0) {
+          airlineName = `${flight.validatingAirlineCodes[0]} Airlines`;
         }
-      } else if (flight.itineraries && flight.itineraries[0]?.segments[0]?.carrierCode) {
-        const carrierCode = flight.itineraries[0].segments[0].carrierCode;
-        airlineName = `${carrierCode} Airlines`;
-      } else if (flight.validatingAirlineCodes && flight.validatingAirlineCodes.length > 0) {
-        airlineName = `${flight.validatingAirlineCodes[0]} Airlines`;
-      }
-      
-      let departureTime = flight.departure_time || flight.departureTime;
-      let arrivalTime = flight.arrival_time || flight.arrivalTime;
-      
-      if (flight.itineraries && flight.itineraries[0]?.segments) {
-        const segments = flight.itineraries[0].segments;
-        departureTime = departureTime || segments[0]?.departure?.at;
-        arrivalTime = arrivalTime || segments[segments.length - 1]?.arrival?.at;
-      }
-      
-      flightSection.innerHTML += `
-        <div style="padding: 15px; background-color: #f8fafc; border-radius: 8px; margin-bottom: 20px; border: 1px solid #e2e8f0;">
-          <div style="display: flex; justify-content: space-between; margin-bottom: 15px;">
-            <div>
-              <p style="font-size: 18px; font-weight: bold; margin-bottom: 10px;">${airlineName}</p>
-              <div style="display: flex; align-items: center; gap: 8px;">
-                <span style="font-size: 16px; font-weight: 500;">${flight.from_city || flight.fromCity || 'Departure City'}</span>
-                <span style="font-size: 12px; color: #6b7280;">(${flight.from_iata || flight.fromIata || '---'})</span>
-                <span style="font-size: 14px; color: #6b7280;">→</span>
-                <span style="font-size: 16px; font-weight: 500;">${flight.to_city || flight.toCity || 'Arrival City'}</span>
-                <span style="font-size: 12px; color: #6b7280;">(${flight.to_iata || flight.toIata || '---'})</span>
+
+        let departureTime = flight.departure_time || flight.departureTime;
+        let arrivalTime = flight.arrival_time || flight.arrivalTime;
+
+        if (flight.itineraries && flight.itineraries[0]?.segments) {
+          const segments = flight.itineraries[0].segments;
+          departureTime = departureTime || segments[0]?.departure?.at;
+          arrivalTime = arrivalTime || segments[segments.length - 1]?.arrival?.at;
+        }
+
+        const legNumber = flight.leg_number || (index + 1);
+
+        flightSection.innerHTML += `
+          <div style="padding: 20px; background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%); border-radius: 12px; margin-bottom: 20px; border: 1px solid #e2e8f0; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);">
+            ${flights.length > 1 ? `<div style="display: inline-block; background-color: #3b82f6; color: white; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: bold; margin-bottom: 15px;">Leg ${legNumber}</div>` : ''}
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px;">
+              <div style="flex: 1;">
+                <h3 style="font-size: 20px; font-weight: bold; color: #1e293b; margin-bottom: 12px; display: flex; align-items: center;">
+                  <span style="background-color: #f59e0b; color: white; padding: 6px; border-radius: 8px; margin-right: 12px; font-size: 14px;">✈️</span>
+                  ${airlineName}
+                </h3>
+                <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+                  <div style="display: flex; align-items: center; gap: 8px;">
+                    <span style="font-size: 18px; font-weight: 600; color: #1e293b;">${flight.from_city || flight.fromCity || 'Departure City'}</span>
+                    <span style="font-size: 14px; color: #64748b; background-color: #f1f5f9; padding: 4px 8px; border-radius: 6px;">${flight.from_iata || flight.fromIata || '---'}</span>
+                  </div>
+                  <div style="display: flex; align-items: center; gap: 8px;">
+                    <svg style="width: 20px; height: 20px; color: #64748b;" fill="currentColor" viewBox="0 0 20 20">
+                      <path fill-rule="evenodd" d="M12.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-2.293-2.293a1 1 0 010-1.414z" clip-rule="evenodd" />
+                    </svg>
+                  </div>
+                  <div style="display: flex; align-items: center; gap: 8px;">
+                    <span style="font-size: 18px; font-weight: 600; color: #1e293b;">${flight.to_city || flight.toCity || 'Arrival City'}</span>
+                    <span style="font-size: 14px; color: #64748b; background-color: #f1f5f9; padding: 4px 8px; border-radius: 6px;">${flight.to_iata || flight.toIata || '---'}</span>
+                  </div>
+                </div>
+              </div>
+              <div style="text-align: right; margin-left: 20px;">
+                <div style="background-color: #ecfdf5; padding: 12px; border-radius: 12px; border: 1px solid #d1fae5;">
+                  <p style="font-size: 24px; font-weight: bold; color: #065f46; margin: 0;">${formatPrice(flight.price)}</p>
+                  <p style="font-size: 14px; color: #059669; margin: 4px 0 0 0;">${flight.travel_class || flight.travelClass || 'ECONOMY'} Class</p>
+                </div>
               </div>
             </div>
-            <div style="text-align: right;">
-              <p style="font-size: 20px; font-weight: bold; color: #0d9488;">${formatPrice(flight.price)}</p>
-              <p style="font-size: 14px; color: #64748b;">${flight.travel_class || flight.travelClass || 'ECONOMY'} Class</p>
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 16px;">
+              <div style="background-color: #f1f5f9; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0;">
+                <p style="font-size: 12px; color: #64748b; margin-bottom: 4px; font-weight: 500;">Departure</p>
+                <p style="font-size: 16px; font-weight: 600; color: #1e293b; margin: 0;">${formatDate(departureTime)}</p>
+                <p style="font-size: 14px; color: #475569; margin: 4px 0 0 0;">${formatTime(departureTime)}</p>
+              </div>
+              <div style="background-color: #f1f5f9; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0;">
+                <p style="font-size: 12px; color: #64748b; margin-bottom: 4px; font-weight: 500;">Arrival</p>
+                <p style="font-size: 16px; font-weight: 600; color: #1e293b; margin: 0;">${formatDate(arrivalTime)}</p>
+                <p style="font-size: 14px; color: #475569; margin: 4px 0 0 0;">${formatTime(arrivalTime)}</p>
+              </div>
+              <div style="background-color: #f1f5f9; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0;">
+                <p style="font-size: 12px; color: #64748b; margin-bottom: 4px; font-weight: 500;">Duration</p>
+                <p style="font-size: 16px; font-weight: 600; color: #1e293b; margin: 0;">${flight.duration || (flight.itineraries && flight.itineraries[0]?.duration) || 'N/A'}</p>
+              </div>
+              <div style="background-color: #f1f5f9; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0;">
+                <p style="font-size: 12px; color: #64748b; margin-bottom: 4px; font-weight: 500;">Stops</p>
+                <p style="font-size: 16px; font-weight: 600; color: #1e293b; margin: 0;">${flight.stops !== undefined ? `${flight.stops} ${flight.stops === 1 ? 'stop' : 'stops'}` : 'N/A'}</p>
+              </div>
             </div>
           </div>
-          
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 20px;">
-            <div>
-              <p style="font-size: 14px; color: #64748b;">Departure</p>
-              <p style="font-size: 16px; font-weight: 500;">${formatDate(departureTime)} ${formatTime(departureTime)}</p>
-            </div>
-            <div>
-              <p style="font-size: 14px; color: #64748b;">Arrival</p>
-              <p style="font-size: 16px; font-weight: 500;">${formatDate(arrivalTime)} ${formatTime(arrivalTime)}</p>
-            </div>
-            <div>
-              <p style="font-size: 14px; color: #64748b;">Duration</p>
-              <p style="font-size: 16px; font-weight: 500;">${flight.duration || (flight.itineraries && flight.itineraries[0]?.duration) || 'N/A'}</p>
-            </div>
-            <div>
-              <p style="font-size: 14px; color: #64748b;">Stops</p>
-              <p style="font-size: 16px; font-weight: 500;">${flight.stops !== undefined ? `${flight.stops} ${flight.stops === 1 ? 'stop' : 'stops'}` : 'N/A'}</p>
+        `;
+      });
+
+      // Add total summary for multiple flights
+      if (flights.length > 1) {
+        const totalPrice = flights.reduce((sum: number, flight: any) => sum + (flight.price || 0), 0);
+        flightSection.innerHTML += `
+          <div style="background: linear-gradient(135deg, #ecfdf5 0%, #f0fdf4 100%); padding: 20px; border-radius: 12px; border: 1px solid #d1fae5; margin-top: 20px;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <div>
+                <h4 style="font-size: 18px; font-weight: bold; color: #065f46; margin: 0;">Total Flights: ${flights.length}</h4>
+                <p style="font-size: 14px; color: #059669; margin: 4px 0 0 0;">Multi-city journey</p>
+              </div>
+              <div style="text-align: right;">
+                <p style="font-size: 24px; font-weight: bold; color: #065f46; margin: 0;">${formatPrice(totalPrice)}</p>
+                <p style="font-size: 14px; color: #059669; margin: 4px 0 0 0;">Total Price</p>
+              </div>
             </div>
           </div>
-        </div>
-      `;
+        `;
+      }
+
       tempDiv.appendChild(flightSection);
     }
     

@@ -83,7 +83,7 @@ const props = defineProps({
   }
 });
 
-defineEmits(['add-to-packing']);
+const emit = defineEmits(['add-to-packing', 'data-updated']);
 
 const weatherData = ref<any[]>([]);
 const weatherApiKey = '491dbb279c20fd8140c2f9442a8d3e29'; // OpenWeather API key
@@ -251,6 +251,9 @@ const fetchWeatherForecast = async () => {
 
       console.log('Trip weather data created:', tripDays.length, 'days');
       weatherData.value = tripDays;
+
+      // Emit data-updated event for PDF generation
+      emit('data-updated', tripDays);
     }
   } catch (error) {
     console.error('Error fetching weather:', error);

@@ -10,11 +10,16 @@
         Edit Flight
       </button>
     </div>
-    <div v-if="flight" class="space-y-4">
-      <div class="bg-gray-50 rounded-xl p-6 border border-gray-200">
-        <div class="flex flex-col md:flex-row justify-between">
-          <div class="space-y-2 mb-4 md:mb-0">
-            <p class="text-xl font-bold text-gray-800">{{ flight.airline || 'Airline not specified' }}</p>
+    <div v-if="flights && flights.length > 0" class="space-y-4">
+      <div v-for="(flight, index) in flights" :key="flight.id || index" class="bg-gray-50 rounded-xl p-6 border border-gray-200">
+        <div class="flex flex-col md:flex-row justify-between mb-4">
+          <div class="space-y-2">
+            <div class="flex items-center space-x-2">
+              <p class="text-xl font-bold text-gray-800">{{ flight.airline || 'Airline not specified' }}</p>
+              <span v-if="flights.length > 1" class="text-sm bg-teal-100 text-teal-800 px-2 py-1 rounded-full">
+                Leg {{ flight.leg_number || (index + 1) }}
+              </span>
+            </div>
             <div class="flex items-center space-x-2">
               <span class="text-lg font-medium">{{ flight.from_city || flight.fromCity || 'Departure City' }}</span>
               <span class="text-sm text-gray-500">({{ flight.from_iata || flight.fromIata || '---' }})</span>
@@ -30,8 +35,8 @@
             <p class="text-sm text-gray-500">{{ flight.travel_class || flight.travelClass || 'ECONOMY' }} Class</p>
           </div>
         </div>
-        
-        <div class="mt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           <div>
             <p class="text-sm text-gray-500">Departure Date</p>
             <p class="text-lg font-medium">{{ formatDate(flight.departure_date || (flight.itineraries && flight.itineraries[0]?.segments[0]?.departure?.at)) }}</p>
@@ -56,7 +61,7 @@
             <p class="text-sm text-gray-500">Stops</p>
             <p class="text-lg font-medium">{{ flight.stops !== undefined ? `${flight.stops} ${flight.stops === 1 ? 'stop' : 'stops'}` : (flight.itineraries && flight.itineraries[0]?.segments ? `${flight.itineraries[0].segments.length - 1} ${flight.itineraries[0].segments.length - 1 === 1 ? 'stop' : 'stops'}` : 'N/A') }}</p>
           </div>
-          
+
           <!-- Additional flight details from database -->
           <div v-if="flight.flight_number">
             <p class="text-sm text-gray-500">Flight Number</p>
@@ -88,6 +93,20 @@
           </div>
         </div>
       </div>
+
+      <!-- Total summary for multiple flights -->
+      <div v-if="flights.length > 1" class="bg-teal-50 rounded-xl p-4 border border-teal-200">
+        <div class="flex justify-between items-center">
+          <div>
+            <p class="text-lg font-semibold text-teal-800">Total Flights: {{ flights.length }}</p>
+            <p class="text-sm text-teal-600">Flight Type: {{ getFlightTypeLabel(flights[0]?.flight_type) }}</p>
+          </div>
+          <div class="text-right">
+            <p class="text-xl font-bold text-teal-800">{{ formatPrice(getTotalFlightPrice()) }}</p>
+            <p class="text-sm text-teal-600">Total Price</p>
+          </div>
+        </div>
+      </div>
     </div>
     <div v-else class="text-center py-8 text-gray-500 bg-gray-50 rounded-xl">
       <p>No flight selected for this trip.</p>
@@ -96,10 +115,10 @@
 </template>
 
 <script setup lang="ts">
-defineProps({
-  flight: {
-    type: Object,
-    default: null
+const props = defineProps({
+  flights: {
+    type: Array,
+    default: () => []
   },
   editable: {
     type: Boolean,
@@ -108,6 +127,43 @@ defineProps({
 });
 
 defineEmits(['edit']);
+
+// Helper function to get flight type label
+const getFlightTypeLabel = (flightType: string): string => {
+  switch (flightType) {
+    case 'one-way':
+      return 'One Way';
+    case 'round-trip':
+      return 'Round Trip';
+    case 'multi-city':
+    case 'multi-trip':
+      return 'Multi City';
+    default:
+      return 'Flight';
+  }
+};
+
+// Helper function to calculate total flight price
+const getTotalFlightPrice = (): number => {
+  if (!props.flights || props.flights.length === 0) return 0;
+  return props.flights.reduce((total: number, flight: any) => {
+    let price = 0;
+    if (typeof flight.price === 'number') {
+      price = flight.price;
+    } else if (typeof flight.price === 'string') {
+      price = parseFloat(flight.price) || 0;
+    } else if (flight.price && typeof flight.price === 'object') {
+      if (flight.price.total) {
+        price = parseFloat(flight.price.total) || 0;
+      } else if (flight.price.grandTotal) {
+        price = parseFloat(flight.price.grandTotal) || 0;
+      } else if (flight.price.base) {
+        price = parseFloat(flight.price.base) || 0;
+      }
+    }
+    return total + price;
+  }, 0);
+};
 
 const formatPrice = (price: number) => {
   if (price === null || price === undefined) return 'N/A';

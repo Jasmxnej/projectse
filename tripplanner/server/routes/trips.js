@@ -428,9 +428,9 @@ router.get('/summary/:tripId', async (req, res) => {
                 trip.activities = [];
             }
             
-            // Get flight details
-            const [flights] = await connection.query("SELECT * FROM flights WHERE trip_id = ?", [tripId]);
-            const flight = flights.length > 0 ? flights[0] : null;
+            // Get flight details - now returns all flights for multi-leg support
+            const [flights] = await connection.query("SELECT * FROM flights WHERE trip_id = ? ORDER BY leg_number", [tripId]);
+            const flight = flights.length > 0 ? flights : null;
             
             // Get hotel details
             const [hotels] = await connection.query("SELECT * FROM hotels WHERE trip_id = ?", [tripId]);

@@ -103,6 +103,9 @@
 
     <!-- Multi-city -->
     <div v-if="tripType === 'multi-city'" class="space-y-6">
+      <div class="text-sm text-gray-600 bg-blue-50 p-3 rounded-lg">
+        <strong>Multi-city flights:</strong> Create a journey with multiple destinations. You can visit the same city multiple times. For example: Bangkok → Chiang Mai → Bangkok → Chiang Mai.
+      </div>
       <div
         v-for="(segment, index) in flightSegments"
         :key="index"
@@ -494,10 +497,28 @@ const fetchCityIata = async (cityName: string, type: 'departure' | 'arrival') =>
 const searchFlights = async () => {
   isSearching.value = true;
   let params: any;
+
   if (tripType.value === 'multi-city') {
+    // Validate multi-city segments for overlaps
+    const segments = flightSegments.value.filter(s => s.departureIata && s.arrivalIata && s.departureDate);
+    if (segments.length < 2) {
+      alert('Please add at least 2 flight segments for multi-city search.');
+      isSearching.value = false;
+      return;
+    }
+
+    // Basic validation - ensure all segments have required data
+    for (const segment of segments) {
+      if (!segment.departureIata || !segment.arrivalIata || !segment.departureDate) {
+        alert('Please fill in all departure cities, arrival cities, and dates for all flight segments.');
+        isSearching.value = false;
+        return;
+      }
+    }
+
     params = {
-      originDestinations: flightSegments.value.map(s => ({
-        id: (flightSegments.value.indexOf(s) + 1).toString(),
+      originDestinations: segments.map(s => ({
+        id: (segments.indexOf(s) + 1).toString(),
         originLocationCode: s.departureIata,
         destinationLocationCode: s.arrivalIata,
         departureDateTimeRange: {

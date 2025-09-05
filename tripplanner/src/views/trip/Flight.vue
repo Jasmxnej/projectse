@@ -40,6 +40,7 @@
           :selected-flights="selectedFlights"
           :title="flightResultsTitle"
           :current-itinerary="currentItinerary"
+          :search-params="searchParams"
           @show-details="showFlightDetails"
           @select-flight="handleFlightSelected"
         />
@@ -86,6 +87,7 @@ const {
   selectedFlights,
   currentItinerary,
   flightResultsTitle,
+  searchParams,
   showFlightDetails,
   fetchFlightOptions,
   skipStep,

@@ -264,6 +264,19 @@ router.post('/amadeus/flights', async (req, res) => {
     res.send({ data: response.data, dictionaries: response.dictionaries });
   } catch (error) {
     console.error('Amadeus API Error in /flights:', error.description || error.message, error.response ? error.response.data : '');
+
+    // Handle specific Amadeus errors
+    if (error.response && error.response.data && error.response.data.errors) {
+      const amadeusError = error.response.data.errors[0];
+      if (amadeusError.code === 4926 && amadeusError.detail.includes('overlap')) {
+        return res.status(400).send({
+          message: "Invalid multi-city flight request. Please ensure no overlapping segments (destination of one flight should not be the origin of the next). For round-trip journeys, use the Round-trip option instead.",
+          error: amadeusError.detail,
+          code: amadeusError.code
+        });
+      }
+    }
+
     if (error.response) {
       res.status(error.response.statusCode).send({ message: "Failed to fetch flight offers.", error: error.description });
     } else {
@@ -774,39 +787,88 @@ router.post('/gemini/generate', async (req, res) => {
 });
 
 router.get('/unsplash/image', async (req, res) => {
-  const { place } = req.query;
+  const { place, type = 'general' } = req.query;
   if (!place) {
     return res.status(400).json({ error: 'Place query parameter is required' });
   }
-  
+
   try {
-    // Try Unsplash API first
+    // Build a more specific search query based on type
+    let searchQuery = place;
+
+    if (type === 'hotel') {
+      // For hotels, add hotel-specific keywords to get more accurate results
+      const hotelKeywords = ['hotel', 'resort', 'boutique hotel', 'luxury hotel', 'accommodation'];
+      // Check if the place name already contains hotel keywords
+      const hasHotelKeyword = hotelKeywords.some(keyword =>
+        place.toLowerCase().includes(keyword.toLowerCase())
+      );
+
+      if (!hasHotelKeyword) {
+        // Add hotel keywords to improve search accuracy
+        searchQuery = `${place} hotel`;
+      }
+    } else if (type === 'restaurant') {
+      searchQuery = `${place} restaurant food`;
+    } else if (type === 'attraction') {
+      searchQuery = `${place} landmark tourist attraction`;
+    }
+
+    // Try Unsplash API first with improved query
     const result = await axios.get('https://api.unsplash.com/search/photos', {
       params: {
-        query: place,
-        per_page: 1,
-        orientation: 'landscape'
+        query: searchQuery,
+        per_page: 3, // Get more results to choose from
+        orientation: 'landscape',
+        content_filter: 'high' // Only high-quality images
       },
       headers: {
         Authorization: `Client-ID ${unsplashConfig.accessKey}`
       },
       timeout: 5000 // 5 second timeout
     });
-    
-    const image = result.data.results[0]?.urls?.regular;
-    if (image) {
-      return res.json({ image });
-    } else {
-      throw new Error('No images found');
+
+    // Filter results to find the most relevant image
+    const results = result.data.results || [];
+    let selectedImage = null;
+
+    if (results.length > 0) {
+      // For hotels, prefer images that might show hotel exteriors or lobbies
+      if (type === 'hotel') {
+        // Look for images with hotel-related tags or descriptions
+        const hotelImage = results.find(img =>
+          img.tags?.some(tag => tag.title?.toLowerCase().includes('hotel')) ||
+          img.description?.toLowerCase().includes('hotel') ||
+          img.alt_description?.toLowerCase().includes('hotel')
+        );
+        selectedImage = hotelImage || results[0];
+      } else {
+        selectedImage = results[0];
+      }
+
+      if (selectedImage?.urls?.regular) {
+        return res.json({ image: selectedImage.urls.regular });
+      }
     }
+
+    throw new Error('No suitable images found');
   } catch (err) {
     console.error('Error fetching image from Unsplash:', err.response?.status, err.message);
-    
-    // Fallback to source.unsplash.com with better error handling
+
+    // Fallback to source.unsplash.com with improved query building
     try {
-      const cleanPlace = place.replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '+');
-      const fallbackUrl = `https://source.unsplash.com/featured/640x360/?${cleanPlace}`;
-      
+      let fallbackQuery = place.replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '+');
+
+      if (type === 'hotel') {
+        fallbackQuery = `${fallbackQuery}+hotel`;
+      } else if (type === 'restaurant') {
+        fallbackQuery = `${fallbackQuery}+restaurant`;
+      } else if (type === 'attraction') {
+        fallbackQuery = `${fallbackQuery}+landmark`;
+      }
+
+      const fallbackUrl = `https://source.unsplash.com/featured/640x360/?${fallbackQuery}`;
+
       // Test if the fallback URL is accessible
       const testResponse = await axios.head(fallbackUrl, { timeout: 3000 });
       if (testResponse.status === 200) {
@@ -815,17 +877,28 @@ router.get('/unsplash/image', async (req, res) => {
     } catch (fallbackErr) {
       console.error('Fallback image also failed:', fallbackErr.message);
     }
-    
-    // Final fallback to a reliable generic travel image
-    const genericImages = [
+
+    // Final fallback to type-specific generic images
+    let genericImages = [
       'https://images.unsplash.com/photo-1488646953014-85cb44e25828?ixlib=rb-4.0.3&auto=format&fit=crop&w=640&h=360&q=80', // Travel
       'https://images.unsplash.com/photo-1469474968028-56623f02e42e?ixlib=rb-4.0.3&auto=format&fit=crop&w=640&h=360&q=80', // Nature
       'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?ixlib=rb-4.0.3&auto=format&fit=crop&w=640&h=360&q=80', // Mountain
       'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?ixlib=rb-4.0.3&auto=format&fit=crop&w=640&h=360&q=80', // Beach
       'https://images.unsplash.com/photo-1513475382585-d06e58bcb0e0?ixlib=rb-4.0.3&auto=format&fit=crop&w=640&h=360&q=80'  // City
     ];
-    
-    // Select a random generic image
+
+    // Use hotel-specific fallback images for hotels
+    if (type === 'hotel') {
+      genericImages = [
+        'https://images.unsplash.com/photo-1566073771259-6a8506099945?ixlib=rb-4.0.3&auto=format&fit=crop&w=640&h=360&q=80', // Hotel lobby
+        'https://images.unsplash.com/photo-1551882547-ff40c63fe5fa?ixlib=rb-4.0.3&auto=format&fit=crop&w=640&h=360&q=80', // Hotel exterior
+        'https://images.unsplash.com/photo-1571003123894-1f0594d2b5d9?ixlib=rb-4.0.3&auto=format&fit=crop&w=640&h=360&q=80', // Resort
+        'https://images.unsplash.com/photo-1590490360182-c33d57733427?ixlib=rb-4.0.3&auto=format&fit=crop&w=640&h=360&q=80', // Boutique hotel
+        'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?ixlib=rb-4.0.3&auto=format&fit=crop&w=640&h=360&q=80'  // Luxury hotel
+      ];
+    }
+
+    // Select a random appropriate image
     const randomImage = genericImages[Math.floor(Math.random() * genericImages.length)];
     res.json({ image: randomImage });
   }

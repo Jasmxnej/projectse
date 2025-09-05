@@ -91,7 +91,7 @@ const api = {
     }
   },
 
-  async saveFlights(tripId: string, flights: any, dictionaries: any) {
+  async saveFlights(tripId: string, flights: any, dictionaries: any, tripType?: string) {
     if (isApiDown) {
       console.log('API is down, simulating flight save.');
       return Promise.resolve({ success: true });
@@ -101,6 +101,7 @@ const api = {
         flights,
         dictionaries,
         trip_id: tripId,
+        tripType,
       });
       return response.data;
     } catch (error) {

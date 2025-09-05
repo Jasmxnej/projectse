@@ -38,7 +38,16 @@
             <button @click="saveTrip" class="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors font-semibold shadow-md">
               Save Trip
             </button>
-            <TripPdfGenerator :trip="trip" />
+            <TripPdfGenerator
+              :trip="trip"
+              :flights="flights"
+              :hotel="hotel"
+              :schedule="schedule"
+              :weatherData="weatherData"
+              :packingData="packingData"
+              :recommendationsData="recommendationsData"
+              :budgetData="budgetData"
+            />
           </div>
         </div>
 
@@ -70,10 +79,10 @@
               </div>
               
               <!-- Flight Summary -->
-              <div class="bg-gray-50 rounded-lg p-4 border border-gray-200" :class="{'opacity-50': !flight}">
+              <div class="bg-gray-50 rounded-lg p-4 border border-gray-200" :class="{'opacity-50': !flights || flights.length === 0}">
                 <div class="flex items-center justify-between mb-2">
-                  <h3 class="text-lg font-semibold text-gray-800">Flight</h3>
-                  <button v-if="flight" @click="editFlight" class="text-teal-600 hover:text-teal-800">
+                  <h3 class="text-lg font-semibold text-gray-800">Flight{{ flights && flights.length > 1 ? 's' : '' }}</h3>
+                  <button v-if="flights && flights.length > 0" @click="editFlight" class="text-teal-600 hover:text-teal-800">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                       <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
                     </svg>
@@ -82,18 +91,26 @@
                     Add Flight
                   </button>
                 </div>
-                <div v-if="flight" class="space-y-2 text-sm">
-                  <p><span class="font-medium">Route:</span> {{ flight.from_city || flight.fromCity || '?' }} ({{ flight.from_iata || flight.fromIata || '?' }}) → {{ flight.to_city || flight.toCity || '?' }} ({{ flight.to_iata || flight.toIata || '?' }})</p>
-                  <p><span class="font-medium">Airline:</span> {{ flight.airline || 'Unknown Airline' }}</p>
-                  <p><span class="font-medium">Class:</span> {{ flight.travel_class || flight.travelClass || 'Economy' }}</p>
-                  <p><span class="font-medium">Departure:</span> {{ formatDateTime(flight.departure_time || flight.departureTime) }}</p>
-                  <p><span class="font-medium">Arrival:</span> {{ formatDateTime(flight.arrival_time || flight.arrivalTime) }}</p>
-                  <p><span class="font-medium">Duration:</span> {{ formatDuration(flight.duration) }}</p>
-                  <p><span class="font-medium">Stops:</span> {{ flight.stops || 0 }} {{ (flight.stops || 0) === 1 ? 'stop' : 'stops' }}</p>
-                  <p><span class="font-medium">Price:</span> {{ formatPrice(flight.price) }}</p>
+                <div v-if="flights && flights.length > 0" class="space-y-3 text-sm">
+                  <div v-for="(flight, index) in flights" :key="flight.id || index" class="border-l-4 border-teal-500 pl-3">
+                    <div v-if="flights.length > 1" class="text-xs text-teal-600 font-medium mb-1">
+                      Leg {{ flight.leg_number || (index + 1) }} - {{ getFlightTypeLabel(flight.flight_type) }}
+                    </div>
+                    <p><span class="font-medium">Route:</span> {{ flight.from_city || flight.fromCity || '?' }} ({{ flight.from_iata || flight.fromIata || '?' }}) → {{ flight.to_city || flight.toCity || '?' }} ({{ flight.to_iata || flight.toIata || '?' }})</p>
+                    <p><span class="font-medium">Airline:</span> {{ flight.airline || 'Unknown Airline' }}</p>
+                    <p><span class="font-medium">Departure:</span> {{ formatDateTime(flight.departure_time || flight.departureTime) }}</p>
+                    <p><span class="font-medium">Arrival:</span> {{ formatDateTime(flight.arrival_time || flight.arrivalTime) }}</p>
+                    <p><span class="font-medium">Price:</span> {{ formatPrice(flight.price) }}</p>
+                  </div>
+                  <div v-if="flights.length > 1" class="mt-3 pt-3 border-t border-gray-300">
+                    <p class="text-xs text-gray-600">
+                      <span class="font-medium">Total Flights:</span> {{ flights.length }}
+                      <span class="ml-4 font-medium">Total Price:</span> {{ formatPrice(getTotalFlightPrice()) }}
+                    </p>
+                  </div>
                 </div>
                 <div v-else class="text-sm text-gray-500 italic">
-                  <p>No flight selected for this trip.</p>
+                  <p>Not selected yet.</p>
                 </div>
               </div>
               
@@ -127,7 +144,7 @@
                   <p><span class="font-medium">Price:</span> {{ formatPrice(hotel.price) }}</p>
                 </div>
                 <div v-else class="text-sm text-gray-500 italic">
-                  <p>No hotel selected for this trip.</p>
+                  <p>Not selected yet.</p>
                 </div>
               </div>
             </div>
@@ -169,7 +186,7 @@
             
             <!-- Flight Details Tab -->
             <div v-if="selectedView === 'flight'">
-              <FlightDetailsCard :flight="flight" @edit="editFlight" />
+              <FlightDetailsCard :flights="flights" @edit="editFlight" />
             </div>
             
             <!-- Hotel Details Tab -->
@@ -194,27 +211,32 @@
             <!-- Weather Forecast Tab -->
             <div v-else-if="selectedView === 'weather'">
               <TripWeatherForecast
+                ref="weatherComponent"
                 :destination="trip.destination"
                 :start-date="trip.start_date"
                 :end-date="trip.end_date"
                 @add-to-packing="addPackingItemFromSuggestion"
                 :use-saved-data="true"
+                @data-updated="updateWeatherData"
               />
             </div>
-            
+
             <!-- Packing List Tab -->
             <div v-else-if="selectedView === 'packing'">
               <TripPackingList
+                ref="packingComponent"
                 :trip-id="trip.id"
-                ref="packingListComponent"
+                @data-updated="updatePackingData"
               />
             </div>
-            
+
             <!-- Local Recommendations Tab -->
             <div v-else-if="selectedView === 'recommendations'">
               <TripLocalRecommendations
+                ref="recommendationsComponent"
                 :destination="trip.destination"
                 :use-saved-data="true"
+                @data-updated="updateRecommendationsData"
               />
             </div>
             
@@ -252,13 +274,24 @@ const router = useRouter();
 const tripStore = useTripStore();
 const authStore = useAuthStore();
 const trip = ref<any>(null);
-const flight = ref<any>(null);
+const flights = ref<any[]>([]);
 const hotel = ref<any>(null);
 const schedule = ref<any[]>([]);
 const loading = ref(true);
 const summaryContent = ref<HTMLElement | null>(null);
 const plannedExpenses = computed(() => tripStore.plannedExpenses);
 const packingListComponent = ref<any>(null);
+
+// Component refs for data collection
+const weatherComponent = ref<any>(null);
+const packingComponent = ref<any>(null);
+const recommendationsComponent = ref<any>(null);
+
+// Data for PDF generation
+const weatherData = ref<any[]>([]);
+const packingData = ref<any>(null);
+const recommendationsData = ref<any>(null);
+const budgetData = ref<any>(null);
 
 // Trip name editing
 const isEditingName = ref(false);
@@ -270,7 +303,7 @@ const selectedView = ref('flight');
 const hasData = (section: string): boolean => {
   switch (section) {
     case 'flight':
-      return !!flight.value;
+      return !!(flights.value && flights.value.length > 0);
     case 'hotel':
       return !!hotel.value;
     case 'daily':
@@ -288,6 +321,43 @@ const hasData = (section: string): boolean => {
     default:
       return false;
   }
+};
+
+// Helper function to get flight type label
+const getFlightTypeLabel = (flightType: string): string => {
+  switch (flightType) {
+    case 'one-way':
+      return 'One Way';
+    case 'round-trip':
+      return 'Round Trip';
+    case 'multi-city':
+    case 'multi-trip':
+      return 'Multi City';
+    default:
+      return 'Flight';
+  }
+};
+
+// Helper function to calculate total flight price
+const getTotalFlightPrice = (): number => {
+  if (!flights.value || flights.value.length === 0) return 0;
+  return flights.value.reduce((total, flight) => {
+    let price = 0;
+    if (typeof flight.price === 'number') {
+      price = flight.price;
+    } else if (typeof flight.price === 'string') {
+      price = parseFloat(flight.price) || 0;
+    } else if (flight.price && typeof flight.price === 'object') {
+      if (flight.price.total) {
+        price = parseFloat(flight.price.total) || 0;
+      } else if (flight.price.grandTotal) {
+        price = parseFloat(flight.price.grandTotal) || 0;
+      } else if (flight.price.base) {
+        price = parseFloat(flight.price.base) || 0;
+      }
+    }
+    return total + price;
+  }, 0);
 };
 
 // Format price for display
@@ -349,108 +419,109 @@ const fetchTripSummary = async () => {
     
     // Ensure flight data is properly extracted with ALL database fields
     if (tripStore.flights.length > 0) {
-      flight.value = tripStore.flights[0];
-      
-      // Create a normalized flight object with ALL database fields
-      const normalizedFlight = {
-        id: flight.value.id || Date.now(),
-        airline: 'Unknown Airline', // Will be determined below
-        flight_number: flight.value.flight_number || '',
-        from_city: flight.value.from_city || flight.value.fromCity || 'Unknown Origin',
-        to_city: flight.value.to_city || flight.value.toCity || 'Unknown Destination',
-        from_iata: flight.value.from_iata || flight.value.fromIata || 'N/A',
-        to_iata: flight.value.to_iata || flight.value.toIata || 'N/A',
-        departure_date: flight.value.departure_date || flight.value.departureDate || new Date().toISOString(),
-        departure_time: flight.value.departure_time || flight.value.departureTime || flight.value.departure || null,
-        arrival_date: flight.value.arrival_date || flight.value.arrivalDate || new Date().toISOString(),
-        arrival_time: flight.value.arrival_time || flight.value.arrivalTime || flight.value.arrival || null,
-        travel_class: flight.value.travel_class || flight.value.travelClass || 'ECONOMY',
-        price: flight.value.price || 0,
-        currency: flight.value.currency || 'THB',
-        duration: flight.value.duration || 'PT0H',
-        stops: flight.value.stops || 0,
-        traveler_type: flight.value.traveler_type || 'ADULT',
-        fare_class: flight.value.fare_class || 'ECONOMY',
-        baggage_quantity: flight.value.baggage_quantity || 0,
-        bag_weight: flight.value.bag_weight || '',
-        bag_weight_unit: flight.value.bag_weight_unit || '',
-        aircraft_code: flight.value.aircraft_code || '',
-        fare_basis: flight.value.fare_basis || ''
-      };
-      
-      // Extract airline information with better logic
-      if (flight.value.airline && flight.value.airline !== 'Unknown Airline') {
-        normalizedFlight.airline = flight.value.airline;
-      } else if (flight.value.dictionaries && flight.value.itineraries) {
-        const firstSegment = flight.value.itineraries[0]?.segments[0];
-        if (firstSegment && firstSegment.carrierCode && flight.value.dictionaries.carriers) {
-          const airlineName = flight.value.dictionaries.carriers[firstSegment.carrierCode];
-          normalizedFlight.airline = airlineName || `${firstSegment.carrierCode} Airlines`;
+      flights.value = tripStore.flights.map(flightData => {
+        // Create a normalized flight object with ALL database fields
+        const normalizedFlight = {
+          id: flightData.id || Date.now(),
+          leg_number: flightData.leg_number || 1,
+          flight_type: flightData.flight_type || 'one-way',
+          airline: 'Unknown Airline', // Will be determined below
+          flight_number: flightData.flight_number || '',
+          from_city: flightData.from_city || flightData.fromCity || 'Unknown Origin',
+          to_city: flightData.to_city || flightData.toCity || 'Unknown Destination',
+          from_iata: flightData.from_iata || flightData.fromIata || 'N/A',
+          to_iata: flightData.to_iata || flightData.toIata || 'N/A',
+          departure_date: flightData.departure_date || flightData.departureDate || new Date().toISOString(),
+          departure_time: flightData.departure_time || flightData.departureTime || flightData.departure || null,
+          arrival_date: flightData.arrival_date || flightData.arrivalDate || new Date().toISOString(),
+          arrival_time: flightData.arrival_time || flightData.arrivalTime || flightData.arrival || null,
+          travel_class: flightData.travel_class || flightData.travelClass || 'ECONOMY',
+          price: flightData.price || 0,
+          currency: flightData.currency || 'THB',
+          duration: flightData.duration || 'PT0H',
+          stops: flightData.stops || 0,
+          traveler_type: flightData.traveler_type || 'ADULT',
+          fare_class: flightData.fare_class || 'ECONOMY',
+          baggage_quantity: flightData.baggage_quantity || 0,
+          bag_weight: flightData.bag_weight || '',
+          bag_weight_unit: flightData.bag_weight_unit || '',
+          aircraft_code: flightData.aircraft_code || '',
+          fare_basis: flightData.fare_basis || ''
+        };
+
+        // Extract airline information with better logic
+        if (flightData.airline && flightData.airline !== 'Unknown Airline') {
+          normalizedFlight.airline = flightData.airline;
+        } else if (flightData.dictionaries && flightData.itineraries) {
+          const firstSegment = flightData.itineraries[0]?.segments[0];
+          if (firstSegment && firstSegment.carrierCode && flightData.dictionaries.carriers) {
+            const airlineName = flightData.dictionaries.carriers[firstSegment.carrierCode];
+            normalizedFlight.airline = airlineName || `${firstSegment.carrierCode} Airlines`;
+          }
+        } else if (flightData.itineraries && flightData.itineraries[0]?.segments[0]?.carrierCode) {
+          // If no dictionaries but we have carrier code, use it
+          const carrierCode = flightData.itineraries[0].segments[0].carrierCode;
+          normalizedFlight.airline = `${carrierCode} Airlines`;
+        } else if (flightData.validatingAirlineCodes && flightData.validatingAirlineCodes.length > 0) {
+          // Use validating airline code as fallback
+          normalizedFlight.airline = `${flightData.validatingAirlineCodes[0]} Airlines`;
         }
-      } else if (flight.value.itineraries && flight.value.itineraries[0]?.segments[0]?.carrierCode) {
-        // If no dictionaries but we have carrier code, use it
-        const carrierCode = flight.value.itineraries[0].segments[0].carrierCode;
-        normalizedFlight.airline = `${carrierCode} Airlines`;
-      } else if (flight.value.validatingAirlineCodes && flight.value.validatingAirlineCodes.length > 0) {
-        // Use validating airline code as fallback
-        normalizedFlight.airline = `${flight.value.validatingAirlineCodes[0]} Airlines`;
-      }
-      
-      // Extract departure and arrival information with better error handling
-      if (flight.value.itineraries && flight.value.itineraries[0]?.segments) {
-        const firstSegment = flight.value.itineraries[0].segments[0];
-        const lastSegment = flight.value.itineraries[0].segments[flight.value.itineraries[0].segments.length - 1];
-        
-        if (firstSegment && firstSegment.departure && firstSegment.departure.at) {
-          normalizedFlight.departure_date = firstSegment.departure.at;
-          normalizedFlight.departure_time = firstSegment.departure.at;
-          
-          // Extract origin city and IATA if not already set
-          if (normalizedFlight.from_city === 'Unknown Origin' && firstSegment.departure.iataCode) {
-            normalizedFlight.from_iata = firstSegment.departure.iataCode;
+
+        // Extract departure and arrival information with better error handling
+        if (flightData.itineraries && flightData.itineraries[0]?.segments) {
+          const firstSegment = flightData.itineraries[0].segments[0];
+          const lastSegment = flightData.itineraries[0].segments[flightData.itineraries[0].segments.length - 1];
+
+          if (firstSegment && firstSegment.departure && firstSegment.departure.at) {
+            normalizedFlight.departure_date = firstSegment.departure.at;
+            normalizedFlight.departure_time = firstSegment.departure.at;
+
+            // Extract origin city and IATA if not already set
+            if (normalizedFlight.from_city === 'Unknown Origin' && firstSegment.departure.iataCode) {
+              normalizedFlight.from_iata = firstSegment.departure.iataCode;
+            }
+          }
+
+          if (lastSegment && lastSegment.arrival && lastSegment.arrival.at) {
+            normalizedFlight.arrival_date = lastSegment.arrival.at;
+            normalizedFlight.arrival_time = lastSegment.arrival.at;
+
+            // Extract destination city and IATA if not already set
+            if (normalizedFlight.to_city === 'Unknown Destination' && lastSegment.arrival.iataCode) {
+              normalizedFlight.to_iata = lastSegment.arrival.iataCode;
+            }
+          }
+
+          // Calculate number of stops
+          normalizedFlight.stops = flightData.itineraries[0].segments.length - 1;
+        }
+
+        // Extract price information with better handling
+        if (typeof flightData.price === 'number') {
+          normalizedFlight.price = flightData.price;
+        } else if (flightData.price && typeof flightData.price === 'object') {
+          if (flightData.price.total) {
+            normalizedFlight.price = parseFloat(flightData.price.total);
+          } else if (flightData.price.grandTotal) {
+            normalizedFlight.price = parseFloat(flightData.price.grandTotal);
+          } else if (flightData.price.base) {
+            normalizedFlight.price = parseFloat(flightData.price.base);
           }
         }
-        
-        if (lastSegment && lastSegment.arrival && lastSegment.arrival.at) {
-          normalizedFlight.arrival_date = lastSegment.arrival.at;
-          normalizedFlight.arrival_time = lastSegment.arrival.at;
-          
-          // Extract destination city and IATA if not already set
-          if (normalizedFlight.to_city === 'Unknown Destination' && lastSegment.arrival.iataCode) {
-            normalizedFlight.to_iata = lastSegment.arrival.iataCode;
-          }
+
+        // Extract duration with better handling
+        if (flightData.duration) {
+          normalizedFlight.duration = flightData.duration;
+        } else if (flightData.itineraries && flightData.itineraries[0]?.duration) {
+          normalizedFlight.duration = flightData.itineraries[0].duration;
         }
-        
-        // Calculate number of stops
-        normalizedFlight.stops = flight.value.itineraries[0].segments.length - 1;
-      }
-      
-      // Extract price information with better handling
-      if (typeof flight.value.price === 'number') {
-        normalizedFlight.price = flight.value.price;
-      } else if (flight.value.price && typeof flight.value.price === 'object') {
-        if (flight.value.price.total) {
-          normalizedFlight.price = parseFloat(flight.value.price.total);
-        } else if (flight.value.price.grandTotal) {
-          normalizedFlight.price = parseFloat(flight.value.price.grandTotal);
-        } else if (flight.value.price.base) {
-          normalizedFlight.price = parseFloat(flight.value.price.base);
-        }
-      }
-      
-      // Extract duration with better handling
-      if (flight.value.duration) {
-        normalizedFlight.duration = flight.value.duration;
-      } else if (flight.value.itineraries && flight.value.itineraries[0]?.duration) {
-        normalizedFlight.duration = flight.value.itineraries[0].duration;
-      }
-      
-      // Update flight value with normalized data
-      flight.value = { ...flight.value, ...normalizedFlight };
-      
-      console.log('Normalized flight data:', flight.value);
+
+        return { ...flightData, ...normalizedFlight };
+      });
+
+      console.log('Normalized flights data:', flights.value);
     } else {
-      flight.value = null;
+      flights.value = [];
     }
     
     // Ensure hotel data is properly extracted with ALL database fields
@@ -692,7 +763,7 @@ const saveTrip = async () => {
         localStorage.setItem(`trip-${tripId}-name`, trip.value.name);
         localStorage.setItem(`trip-${tripId}-data`, JSON.stringify(trip.value));
         localStorage.setItem(`trip-${tripId}-budget`, JSON.stringify(plannedExpenses.value));
-        localStorage.setItem(`trip-${tripId}-flight`, JSON.stringify(flight.value));
+        localStorage.setItem(`trip-${tripId}-flights`, JSON.stringify(flights.value));
         localStorage.setItem(`trip-${tripId}-hotel`, JSON.stringify(hotel.value));
         localStorage.setItem(`trip-${tripId}-schedule`, JSON.stringify(schedule.value));
         
@@ -821,6 +892,19 @@ const addPackingItemFromSuggestion = (itemName: string) => {
   if (packingListComponent.value) {
     packingListComponent.value.addPackingItemFromSuggestion(itemName);
   }
+};
+
+// Data update methods for PDF generation
+const updateWeatherData = (data: any[]) => {
+  weatherData.value = data;
+};
+
+const updatePackingData = (data: any) => {
+  packingData.value = data;
+};
+
+const updateRecommendationsData = (data: any) => {
+  recommendationsData.value = data;
 };
 
 onMounted(async () => {

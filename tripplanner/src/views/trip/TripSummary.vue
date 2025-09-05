@@ -14,7 +14,7 @@
             <TripPdfGenerator
               :trip="trip"
               :summaryContent="summaryContent || {}"
-              :flight="flight"
+              :flights="flights"
               :hotel="hotel"
               :schedule="schedule"
               :weatherData="weatherForecastComponent?.weatherData || []"
@@ -74,7 +74,7 @@
             
             <!-- Flight Details Tab -->
             <div v-if="selectedView === 'flight'">
-              <FlightDetailsCard :flight="flight" :editable="false" />
+              <FlightDetailsCard :flights="flights" :editable="false" />
             </div>
             
             <!-- Hotel Details Tab -->
@@ -187,7 +187,7 @@ const router = useRouter();
 const tripStore = useTripStore();
 const authStore = useAuthStore();
 const trip = ref<any>(null);
-const flight = ref<any>(null);
+const flights = ref<any[]>([]);
 const hotel = ref<any>(null);
 const schedule = ref<any[]>([]);
 const loading = ref(true);
@@ -259,55 +259,56 @@ const fetchTripSummary = async () => {
     
     // Ensure flight data is properly formatted with ALL database fields
     if (tripStore.flights.length > 0) {
-      const flightData = tripStore.flights[0];
-      
-      // Extract airline name with better logic
-      let airlineName = 'Unknown Airline';
-      if (flightData.airline && flightData.airline !== 'Unknown Airline') {
-        airlineName = flightData.airline;
-      } else if (flightData.dictionaries && flightData.itineraries) {
-        const firstSegment = flightData.itineraries[0]?.segments[0];
-        if (firstSegment && firstSegment.carrierCode && flightData.dictionaries.carriers) {
-          const carrierName = flightData.dictionaries.carriers[firstSegment.carrierCode];
-          airlineName = carrierName || `${firstSegment.carrierCode} Airlines`;
+      flights.value = tripStore.flights.map((flightData, index) => {
+        // Extract airline name with better logic
+        let airlineName = 'Unknown Airline';
+        if (flightData.airline && flightData.airline !== 'Unknown Airline') {
+          airlineName = flightData.airline;
+        } else if (flightData.dictionaries && flightData.itineraries) {
+          const firstSegment = flightData.itineraries[0]?.segments[0];
+          if (firstSegment && firstSegment.carrierCode && flightData.dictionaries.carriers) {
+            const carrierName = flightData.dictionaries.carriers[firstSegment.carrierCode];
+            airlineName = carrierName || `${firstSegment.carrierCode} Airlines`;
+          }
+        } else if (flightData.itineraries && flightData.itineraries[0]?.segments[0]?.carrierCode) {
+          const carrierCode = flightData.itineraries[0].segments[0].carrierCode;
+          airlineName = `${carrierCode} Airlines`;
+        } else if (flightData.validatingAirlineCodes && flightData.validatingAirlineCodes.length > 0) {
+          airlineName = `${flightData.validatingAirlineCodes[0]} Airlines`;
         }
-      } else if (flightData.itineraries && flightData.itineraries[0]?.segments[0]?.carrierCode) {
-        const carrierCode = flightData.itineraries[0].segments[0].carrierCode;
-        airlineName = `${carrierCode} Airlines`;
-      } else if (flightData.validatingAirlineCodes && flightData.validatingAirlineCodes.length > 0) {
-        airlineName = `${flightData.validatingAirlineCodes[0]} Airlines`;
-      }
-      
-      flight.value = {
-        ...flightData,
-        // Ensure ALL database fields exist for the flight details component
-        airline: airlineName,
-        flight_number: flightData.flight_number || '',
-        from_city: flightData.from_city || flightData.fromCity || 'Unknown',
-        to_city: flightData.to_city || flightData.toCity || 'Unknown',
-        from_iata: flightData.from_iata || flightData.fromIata || 'Unknown',
-        to_iata: flightData.to_iata || flightData.toIata || 'Unknown',
-        departure_date: flightData.departure_date || (flightData.itineraries && flightData.itineraries[0]?.segments[0]?.departure?.at),
-        departure_time: flightData.departure_time || (flightData.itineraries && flightData.itineraries[0]?.segments[0]?.departure?.at),
-        arrival_date: flightData.arrival_date || (flightData.itineraries && flightData.itineraries[0]?.segments[flightData.itineraries[0]?.segments.length - 1]?.arrival?.at),
-        arrival_time: flightData.arrival_time || (flightData.itineraries && flightData.itineraries[0]?.segments[flightData.itineraries[0]?.segments.length - 1]?.arrival?.at),
-        duration: flightData.duration || (flightData.itineraries && flightData.itineraries[0]?.duration) || 'PT1H10M',
-        price: flightData.price || 0,
-        currency: flightData.currency || 'THB',
-        stops: flightData.stops !== undefined ? flightData.stops : 0,
-        travel_class: flightData.travel_class || flightData.travelClass || 'ECONOMY',
-        traveler_type: flightData.traveler_type || 'ADULT',
-        fare_class: flightData.fare_class || 'ECONOMY',
-        baggage_quantity: flightData.baggage_quantity || 0,
-        bag_weight: flightData.bag_weight || '',
-        bag_weight_unit: flightData.bag_weight_unit || '',
-        aircraft_code: flightData.aircraft_code || '',
-        fare_basis: flightData.fare_basis || ''
-      };
-      
-      console.log('Flight data with all database fields:', flight.value);
+
+        return {
+          ...flightData,
+          // Ensure ALL database fields exist for the flight details component
+          airline: airlineName,
+          flight_number: flightData.flight_number || '',
+          from_city: flightData.from_city || flightData.fromCity || 'Unknown',
+          to_city: flightData.to_city || flightData.toCity || 'Unknown',
+          from_iata: flightData.from_iata || flightData.fromIata || 'Unknown',
+          to_iata: flightData.to_iata || flightData.toIata || 'Unknown',
+          departure_date: flightData.departure_date || (flightData.itineraries && flightData.itineraries[0]?.segments[0]?.departure?.at),
+          departure_time: flightData.departure_time || (flightData.itineraries && flightData.itineraries[0]?.segments[0]?.departure?.at),
+          arrival_date: flightData.arrival_date || (flightData.itineraries && flightData.itineraries[0]?.segments[flightData.itineraries[0]?.segments.length - 1]?.arrival?.at),
+          arrival_time: flightData.arrival_time || (flightData.itineraries && flightData.itineraries[0]?.segments[flightData.itineraries[0]?.segments.length - 1]?.arrival?.at),
+          duration: flightData.duration || (flightData.itineraries && flightData.itineraries[0]?.duration) || 'PT1H10M',
+          price: flightData.price || 0,
+          currency: flightData.currency || 'THB',
+          stops: flightData.stops !== undefined ? flightData.stops : 0,
+          travel_class: flightData.travel_class || flightData.travelClass || 'ECONOMY',
+          traveler_type: flightData.traveler_type || 'ADULT',
+          fare_class: flightData.fare_class || 'ECONOMY',
+          baggage_quantity: flightData.baggage_quantity || 0,
+          bag_weight: flightData.bag_weight || '',
+          bag_weight_unit: flightData.bag_weight_unit || '',
+          aircraft_code: flightData.aircraft_code || '',
+          fare_basis: flightData.fare_basis || '',
+          leg_number: flightData.leg_number || (index + 1)
+        };
+      });
+
+      console.log('Flight data with all database fields:', flights.value);
     } else {
-      flight.value = null;
+      flights.value = [];
     }
     
     // Ensure hotel data is properly formatted with ALL database fields

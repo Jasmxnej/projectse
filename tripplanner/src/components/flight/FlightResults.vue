@@ -2,7 +2,11 @@
   <div class="w-full max-w-5xl mx-auto px-4 mt-20">
     <!-- Loading -->
     <div v-if="isSearching" class="text-center p-12 animate-pulse">
-      <p class="text-lg font-medium text-gray-500">Searching for flights...</p>
+      <div class="flex flex-col items-center space-y-4">
+        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600"></div>
+        <p class="text-lg font-medium text-gray-500">{{ getLoadingMessage() }}</p>
+        <p class="text-sm text-gray-400">Please wait while we find the best options for you</p>
+      </div>
     </div>
 
     <!-- Results -->
@@ -102,6 +106,14 @@ const showFlightDetails = (flight: Flight) => {
 
 const selectFlight = (flight: Flight) => {
   emit('select-flight', flight)
+}
+
+const getLoadingMessage = () => {
+  if (props.currentItinerary === 0) {
+    return 'Searching for departure flights...'
+  } else {
+    return `Searching for flight segment ${props.currentItinerary + 1}...`
+  }
 }
 </script>
 

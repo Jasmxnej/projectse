@@ -26,9 +26,14 @@ export function useFlightSearch() {
 
   const flightResultsTitle = computed(() => {
     if (tripType.value === 'one-way') return 'One-Way Flight Results';
-    if (currentItinerary.value === 0) return 'Departure Flights';
-    if (currentItinerary.value > 0 && tripType.value === 'round-trip') return 'Return Flights';
-    if (currentItinerary.value > 0 && tripType.value === 'multi-city') return `Flight ${currentItinerary.value + 1} Results`;
+    if (tripType.value === 'round-trip') {
+      if (currentItinerary.value === 0) return 'Departure Flights';
+      return 'Return Flights';
+    }
+    if (tripType.value === 'multi-city') {
+      const totalSegments = searchParams.value?.originDestinations?.length || 1;
+      return `Flight ${currentItinerary.value + 1} of ${totalSegments}`;
+    }
     return 'Flight Results';
   });
 
@@ -61,7 +66,12 @@ export function useFlightSearch() {
     currentItinerary.value = 0;
     isSearching.value = true;
 
-    await loadItineraryFlights(); // load first leg
+    // For multi-city, load segments sequentially like round-trip
+    if (newTripType === 'multi-city') {
+      await loadItineraryFlights(); // load first segment
+    } else {
+      await loadItineraryFlights(); // load first leg
+    }
   };
 
   const loadItineraryFlights = async () => {
@@ -79,14 +89,16 @@ export function useFlightSearch() {
     const p = searchParams.value;
 
     if (tripType.value === 'multi-city') {
-      const seg = p.originDestinations[itineraryIndex];
+      // For multi-city, send individual segments
+      const segment = p.originDestinations[itineraryIndex];
       paramsForSearch = {
-        originLocationCode: seg.originLocationCode,
-        destinationLocationCode: seg.destinationLocationCode,
-        departureDate: seg.departureDate,
-        adults: p.adults,
-        children: p.children,
-        travelClass: p.travelClass,
+        originLocationCode: segment.originLocationCode,
+        destinationLocationCode: segment.destinationLocationCode,
+        departureDate: segment.departureDateTimeRange.date,
+        adults: p.adults || 1,
+        children: p.children || 0,
+        infants: p.infants || 0,
+        travelClass: p.travelClass || 'ECONOMY'
       };
     } else if (tripType.value === 'round-trip') {
       if (itineraryIndex === 0) {
@@ -137,6 +149,16 @@ export function useFlightSearch() {
     } catch (error: any) {
       console.error('Error loading flights:', error);
 
+      // Handle specific Amadeus API errors
+      if (error.response && error.response.data) {
+        const errorData = error.response.data;
+        if (errorData.code === 4926 || (errorData.error && errorData.error.includes && errorData.error.includes('overlap'))) {
+          alert(errorData.message || 'Invalid multi-city flight request. Please ensure no overlapping segments.');
+          isSearching.value = false;
+          return;
+        }
+      }
+
       // fallback Gemini
       try {
         const prompt = `Generate flight options for ${tripType.value} trip. Params: ${JSON.stringify(
@@ -160,6 +182,63 @@ export function useFlightSearch() {
     }
   };
 
+  const loadMultiCityFlights = async () => {
+    // For multi-city, we load all segments at once
+    const p = searchParams.value;
+    const paramsForSearch = {
+      originDestinations: p.originDestinations,
+      travelers: p.travelers,
+      sources: p.sources || ['GDS']
+    };
+
+    try {
+      const response = await axios.post<{ data: Flight[]; dictionaries: FlightDictionaries }>(
+        'http://localhost:3002/api/amadeus/flights',
+        paramsForSearch
+      );
+      flightResults.value = response.data.data || [];
+      flightDictionaries.value = response.data.dictionaries || { locations: {}, carriers: {} };
+
+      // Cache the results
+      cachedFlightResults.value[0] = flightResults.value;
+      cachedFlightDictionaries.value[0] = flightDictionaries.value;
+
+    } catch (error: any) {
+      console.error('Error loading multi-city flights:', error);
+
+      // Handle specific Amadeus API errors
+      if (error.response && error.response.data) {
+        const errorData = error.response.data;
+        if (errorData.code === 4926 || (errorData.error && errorData.error.includes && errorData.error.includes('overlap'))) {
+          alert(errorData.message || 'Invalid multi-city flight request. Please ensure no overlapping segments.');
+          isSearching.value = false;
+          return;
+        }
+      }
+
+      // fallback Gemini
+      try {
+        const prompt = `Generate flight options for multi-city trip. Params: ${JSON.stringify(
+          paramsForSearch
+        )}`;
+        await generateContent(prompt, import.meta.env.VITE_GEMINI_API_KEY);
+        const geminiData = generatedContent.value;
+
+        if (geminiData?.data?.length) {
+          flightResults.value = geminiData.data;
+          flightDictionaries.value = geminiData.dictionaries || { locations: {}, carriers: {} };
+
+          cachedFlightResults.value[0] = flightResults.value;
+          cachedFlightDictionaries.value[0] = flightDictionaries.value;
+        }
+      } catch (geminiError) {
+        console.error('Gemini fallback failed:', geminiError);
+      }
+    } finally {
+      isSearching.value = false;
+    }
+  };
+
   const goBack = () => {
     if (currentItinerary.value > 0) {
       currentItinerary.value--;
@@ -170,17 +249,30 @@ export function useFlightSearch() {
   };
 
   const handleFlightSelected = (flight: Flight) => {
-    selectedFlights.value[currentItinerary.value] = flight;
+    if (tripType.value === 'multi-city') {
+      // For multi-city, handle segment by segment like round-trip
+      selectedFlights.value[currentItinerary.value] = flight;
 
-    const totalLegs = tripType.value === 'multi-city'
-      ? searchParams.value?.originDestinations?.length || 0
-      : tripType.value === 'round-trip' ? 2 : 1;
+      const totalSegments = searchParams.value?.originDestinations?.length || 1;
 
-    if (currentItinerary.value < totalLegs - 1) {
-      currentItinerary.value++;
-      loadItineraryFlights(); // load next leg
+      if (currentItinerary.value < totalSegments - 1) {
+        currentItinerary.value++;
+        loadItineraryFlights(); // load next segment
+      } else {
+        saveSelectedFlight();
+      }
     } else {
-      saveSelectedFlight();
+      // For one-way and round-trip, handle segment by segment
+      selectedFlights.value[currentItinerary.value] = flight;
+
+      const totalLegs = tripType.value === 'round-trip' ? 2 : 1;
+
+      if (currentItinerary.value < totalLegs - 1) {
+        currentItinerary.value++;
+        loadItineraryFlights(); // load next leg
+      } else {
+        saveSelectedFlight();
+      }
     }
   };
 
@@ -247,10 +339,10 @@ export function useFlightSearch() {
     }
 
     try {
-      const flightsForBackend = flightsWithThbPrice.map(flight => {
+      const flightsForBackend = flightsWithThbPrice.map((flight, index) => {
         const seg0 = flight.itineraries[0].segments[0];
         const segN = flight.itineraries[0].segments.at(-1)!;
-        
+
         // Extract detailed flight information
         const departureDateTime = new Date(seg0.departure.at);
         const arrivalDateTime = new Date(segN.arrival.at);
@@ -258,16 +350,17 @@ export function useFlightSearch() {
         const arrivalTime = segN.arrival.at; // Full ISO string
         const departureDate = departureDateTime.toISOString().split('T')[0]; // YYYY-MM-DD
         const arrivalDate = arrivalDateTime.toISOString().split('T')[0]; // YYYY-MM-DD
-        
+
         // Get traveler information
         const traveler = flight.travelerPricings?.[0] || {};
         const fareClass = traveler.fareDetailsBySegment?.[0]?.cabin || 'ECONOMY';
-        
+
         // Get baggage information
         const baggageQuantity = traveler.fareDetailsBySegment?.[0]?.includedCheckedBags?.quantity || 0;
-        
+
         return {
           ...flight,
+          leg_number: index + 1, // Ensure proper leg numbering for multi-city
           airline: seg0.carrierCode || 'Unknown',
           fromCity: flightDictionaries.value.locations[seg0.departure.iataCode]?.cityCode || seg0.departure.iataCode,
           toCity: flightDictionaries.value.locations[segN.arrival.iataCode]?.cityCode || segN.arrival.iataCode,
@@ -285,7 +378,7 @@ export function useFlightSearch() {
         };
       });
 
-      await api.saveFlights(String(tripStore.tripId), flightsForBackend, flightDictionaries.value);
+      await api.saveFlights(String(tripStore.tripId), flightsForBackend, flightDictionaries.value, tripType.value);
       await api.updateBudget(String(tripStore.tripId), tripStore.budget);
       
       // Check if we should return to SummaryMyTrip page
@@ -334,6 +427,7 @@ export function useFlightSearch() {
     selectedFlights,
     currentItinerary,
     flightResultsTitle,
+    searchParams,
     showFlightDetails,
     fetchFlightOptions,
     handleFlightSelected,

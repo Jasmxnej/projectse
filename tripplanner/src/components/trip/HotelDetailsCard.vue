@@ -152,61 +152,73 @@ const formatPrice = (price: number) => {
 // Function to get the correct image URL using Unsplash API
 const getImageUrl = (hotel: any) => {
   if (!hotel) return '';
-  
+
   // Check if image_url exists and is a valid URL
   if (hotel.image_url) {
     // If it's a full URL (starts with http:// or https://)
     if (hotel.image_url.startsWith('http://') || hotel.image_url.startsWith('https://')) {
       return hotel.image_url;
     }
-    
+
     // If it's a relative URL, make it absolute
     if (hotel.image_url.startsWith('/')) {
       return `${window.location.origin}${hotel.image_url}`;
     }
-    
+
     // If it's just a filename, assume it's in the public folder
     return `${window.location.origin}/${hotel.image_url}`;
   }
-  
+
   // If image exists (legacy field)
   if (hotel.image) {
     // If it's a full URL
     if (hotel.image.startsWith('http://') || hotel.image.startsWith('https://')) {
       return hotel.image;
     }
-    
+
     // If it's a relative URL, make it absolute
     if (hotel.image.startsWith('/')) {
       return `${window.location.origin}${hotel.image}`;
     }
-    
+
     // If it's just a filename, assume it's in the public folder
     return `${window.location.origin}/${hotel.image}`;
   }
-  
-  // Try to fetch from Unsplash API or use fallback
-  const searchTerm = hotel.name || hotel.location || hotel.cityCode || hotel.city_code || props.destination || 'hotel';
-  const destination = props.destination || 'destination';
-  
-  // Use a more reliable image URL - try to fetch from Unsplash API if possible
-  // For now, use a more reliable Unsplash URL format
-  return `https://images.unsplash.com/photo-1566073771259-6a8506099945?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=640&h=360&q=80`;
+
+  // Use a reliable hotel image as initial fallback
+  // The improved API will be used in the error handler
+  return `https://images.unsplash.com/photo-1566073771259-6a8506099945?ixlib=rb-4.0.3&auto=format&fit=crop&w=640&h=360&q=80`;
 };
 
-const handleImageError = (e: Event) => {
+const handleImageError = async (e: Event) => {
   const target = e.target as HTMLImageElement;
-  if (target) {
+  if (target && !target.dataset.apiCalled) {
+    target.dataset.apiCalled = 'true';
+
     // Extract the hotel name from the alt attribute or use a default
-    const hotelName = target.alt || 'hotel';
+    const hotelName = props.hotel?.name || target.alt || 'hotel';
     const destination = props.destination || 'resort';
-    
-    // Use a more specific query to get better images
-    target.src = `https://source.unsplash.com/640x360/?${destination.toLowerCase()},hotel`;
-    
-    // Add error handler to fallback to a generic image if the specific one fails
+
+    try {
+      // Try to get a better image from our improved Unsplash API
+      const searchTerm = `${hotelName} ${destination}`;
+      const response = await fetch(`http://localhost:3002/api/unsplash/image?place=${encodeURIComponent(searchTerm)}&type=hotel`);
+      const data = await response.json();
+
+      if (data.image) {
+        target.src = data.image;
+        return;
+      }
+    } catch (error) {
+      console.error('Error fetching hotel image from API:', error);
+    }
+
+    // Fallback to generic hotel images
+    target.src = 'https://images.unsplash.com/photo-1566073771259-6a8506099945?ixlib=rb-4.0.3&auto=format&fit=crop&w=640&h=360&q=80';
+
+    // Add error handler to fallback to another generic image if the first fails
     target.onerror = () => {
-      target.src = 'https://source.unsplash.com/640x360/?hotel,resort';
+      target.src = 'https://images.unsplash.com/photo-1551882547-ff40c63fe5fa?ixlib=rb-4.0.3&auto=format&fit=crop&w=640&h=360&q=80';
       // Remove the error handler to prevent infinite loop
       target.onerror = null;
     };

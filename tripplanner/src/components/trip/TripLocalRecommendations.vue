@@ -111,6 +111,8 @@ const props = defineProps({
   }
 });
 
+const emit = defineEmits(['data-updated']);
+
 // Local recommendations
 const localRecommendations = ref<any[]>([]);
 const categorizedRecommendations = ref<any>({ categories: [] });
@@ -186,7 +188,7 @@ const loadImageFromUnsplash = async (item: any, categoryName: string) => {
   
   try {
     // Use the backend Unsplash API endpoint
-    const response = await axios.get(`http://localhost:3002/api/unsplash/image?place=${encodeURIComponent(searchTerms)}`);
+    const response = await axios.get(`http://localhost:3002/api/unsplash/image?place=${encodeURIComponent(searchTerms)}&type=attraction`);
     const imageUrl = response.data.image;
     
     if (imageUrl) {
@@ -264,6 +266,7 @@ const fetchLocalRecommendations = async () => {
     if (response.data && response.data.categories) {
 
       categorizedRecommendations.value = response.data;
+      emit('data-updated', response.data);
     } else if (response.data && response.data.text) {
       // Try to parse the text response as JSON
       try {
@@ -495,7 +498,7 @@ const handleRecommendationImageError = async (e: Event, item: any, categoryName:
     // Try to get a new image from Unsplash API with generic search
     try {
       const searchTerms = `${destination} travel`;
-      const response = await axios.get(`http://localhost:3002/api/unsplash/image?place=${encodeURIComponent(searchTerms)}`);
+      const response = await axios.get(`http://localhost:3002/api/unsplash/image?place=${encodeURIComponent(searchTerms)}&type=attraction`);
       const imageUrl = response.data.image;
 
       if (imageUrl && imageUrl !== target.src) {

@@ -98,6 +98,8 @@ async function createTablesIfNotExist(connection) {
     CREATE TABLE IF NOT EXISTS flights (
       id INT AUTO_INCREMENT PRIMARY KEY,
       trip_id INT NOT NULL,
+      leg_number INT DEFAULT 1,
+      flight_type ENUM('one-way', 'round-trip', 'multi-trip') DEFAULT 'one-way',
       airline VARCHAR(100),
       flight_number VARCHAR(20),
       from_city VARCHAR(100),

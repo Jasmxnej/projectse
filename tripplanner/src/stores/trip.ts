@@ -138,34 +138,53 @@ export const useTripStore = defineStore('trip', {
       }
       
       // Enhanced flight data handling - preserve all database fields
-      if (flight) {
-        const enhancedFlight = {
-          ...flight,
+      if (flight && flight.length > 0) {
+        // flight is an array from the database
+        const enhancedFlights = flight.map((flightData: any) => ({
+          ...flightData,
           // Ensure all database fields are preserved
-          airline: flight.airline || 'Unknown Airline',
-          flight_number: flight.flight_number || '',
-          from_city: flight.from_city || '',
-          to_city: flight.to_city || '',
-          from_iata: flight.from_iata || '',
-          to_iata: flight.to_iata || '',
-          departure_date: flight.departure_date || '',
-          departure_time: flight.departure_time || '',
-          arrival_date: flight.arrival_date || '',
-          arrival_time: flight.arrival_time || '',
-          duration: flight.duration || '',
-          price: flight.price || 0,
-          currency: flight.currency || 'THB',
-          stops: flight.stops || 0,
-          traveler_type: flight.traveler_type || '',
-          fare_class: flight.fare_class || '',
-          baggage_quantity: flight.baggage_quantity || 0,
-          bag_weight: flight.bag_weight || '',
-          bag_weight_unit: flight.bag_weight_unit || '',
-          aircraft_code: flight.aircraft_code || '',
-          fare_basis: flight.fare_basis || ''
-        };
-        this.flightCost = enhancedFlight.price;
-        this.flights = [enhancedFlight];
+          airline: flightData.airline || 'Unknown Airline',
+          flight_number: flightData.flight_number || '',
+          from_city: flightData.from_city || '',
+          to_city: flightData.to_city || '',
+          from_iata: flightData.from_iata || '',
+          to_iata: flightData.to_iata || '',
+          departure_date: flightData.departure_date || '',
+          departure_time: flightData.departure_time || '',
+          arrival_date: flightData.arrival_date || '',
+          arrival_time: flightData.arrival_time || '',
+          duration: flightData.duration || '',
+          price: flightData.price || 0,
+          currency: flightData.currency || 'THB',
+          stops: flightData.stops || 0,
+          traveler_type: flightData.traveler_type || '',
+          fare_class: flightData.fare_class || '',
+          baggage_quantity: flightData.baggage_quantity || 0,
+          bag_weight: flightData.bag_weight || '',
+          bag_weight_unit: flightData.bag_weight_unit || '',
+          aircraft_code: flightData.aircraft_code || '',
+          fare_basis: flightData.fare_basis || ''
+        }));
+
+        // Calculate total flight cost for all legs with proper price parsing
+        this.flightCost = enhancedFlights.reduce((total: number, flight: any) => {
+          let price = 0;
+          if (typeof flight.price === 'number') {
+            price = flight.price;
+          } else if (typeof flight.price === 'string') {
+            price = parseFloat(flight.price) || 0;
+          } else if (flight.price && typeof flight.price === 'object') {
+            if (flight.price.total) {
+              price = parseFloat(flight.price.total) || 0;
+            } else if (flight.price.grandTotal) {
+              price = parseFloat(flight.price.grandTotal) || 0;
+            } else if (flight.price.base) {
+              price = parseFloat(flight.price.base) || 0;
+            }
+          }
+          return total + price;
+        }, 0);
+        this.flights = enhancedFlights;
       } else {
         this.flightCost = 0;
         this.flights = [];
