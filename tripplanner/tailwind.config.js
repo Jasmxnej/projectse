@@ -12,21 +12,13 @@ export default {
         'red': '#EB4320',
         'lightorange': '#EDB489',
         'darkorange' : '#C25941',
-        'warmcream':'#f4f3ec',
-        'background':'#FFFDF5',
-        'primary': '#95B1EE',
-        'secondary2':'#364C84',
-        'secondary1':'#D0D9F5',
-        'accent1': '#E7F1AB',
-        'accent2':'#333333'
+        'warmcream':'#f4f3ec'
        
       },
       fontFamily: {
         didact: ['"Didact Gothic"', 'sans-serif'],
         cardo: ['"Cardo"', 'serif'],
         montserrat: ['"Montserrat"', 'sans-serif'],
-        playfair: ['"Playfair Display"', 'serif'],
-      
       },
       fontSize:{
         base: '14px'

@@ -1,18 +1,14 @@
 <template>
   <Navbar />
-    <!-- Header Section -->
-  <div class="flex justify-center h-100 text-gray-800 pt-20 pb-24 bg-accent1 mt-20 relative">
-    <div class="space-y-2 text-center">
-      <h2 class="text-4xl font-extrabold text-accent2 flex items-center justify-center gap-2">
-        <MapPin class="w-7 h-7 text-black/70" /> Trip Details
-      </h2>
-      <p class="text-base text-accent2">Where would you like to go and when?</p>
-    </div>
-  </div>
-
-  <div class="flex justify-center text-gray-800 bg-backgound -mt-14 pb-24 ">
-
+  <div class="flex justify-center text-gray-800 pt-20 pb-24 bg-[#f8fafc] mt-20 ">
     <div class="w-full max-w-3xl bg-white rounded-2xl shadow-xl p-10 space-y-10 transition-all duration-500 hover:shadow-2xl hover:scale-[1.01] animate-fade-in">
+      <!-- Header -->
+      <div class="space-y-1">
+        <h2 class="text-4xl font-extrabold text-teal-600 flex items-center gap-3">
+          <MapPin class="w-7 h-7 text-black/70" /> Trip Details
+        </h2>
+        <p class="text-base text-gray-500 pl-1">Where would you like to go and when?</p>
+      </div>
 
       <!-- Destination -->
       <div>
@@ -22,7 +18,7 @@
             v-model="formData.destination"
             type="text"
             placeholder="Type to search..."
-            class="w-full h-[44px] px-4 text-sm bg-white border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-1 focus:ring-secondary1"
+            class="w-full h-[44px] px-4 text-sm bg-white border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-1 focus:ring-teal-500"
             @input="handleCityInput"
             required
           />
@@ -31,7 +27,7 @@
               v-for="suggestion in citySuggestions"
               :key="suggestion.iataCode"
               @click="selectCity(suggestion)"
-              class="px-4 py-2 text-sm  cursor-pointer hover:bg-secondary1 transition-colors"
+              class="px-4 py-2 text-sm  cursor-pointer hover:bg-teal-500 transition-colors"
             >
               {{ suggestion.name }}
             </li>
@@ -69,7 +65,7 @@
                   type="number"
                   v-model.number="formData.groupSize"
                   min="1"
-                  class="w-full h-[44px] pl-10 pr-3 text-sm bg-white border border-gray-300 rounded-xl focus:outline-none focus:ring-1 focus:ring-secondary1 shadow-sm"
+                  class="w-full h-[44px] pl-10 pr-3 text-sm bg-white border border-gray-300 rounded-xl focus:outline-none focus:ring-1 focus:ring-teal-500 shadow-sm"
                   placeholder="1"
                 />
               </div>
@@ -83,7 +79,7 @@
                   type="text"
                   v-model="formattedBudget"
                   @input="onBudgetInput"
-                  class="w-full h-[44px] pl-8 pr-3 text-sm bg-white border border-gray-300 rounded-xl focus:outline-none focus:ring-1 focus:ring-secondary1 shadow-sm"
+                  class="w-full h-[44px] pl-8 pr-3 text-sm bg-white border border-gray-300 rounded-xl focus:outline-none focus:ring-1 focus:ring-teal-500 shadow-sm"
                   placeholder="10,000"
                 />
               </div>
@@ -102,8 +98,8 @@
                 :class="[
                   'flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium border shadow-sm transition-all duration-300 transform hover:scale-[1.02]',
                   formData.activities.includes(tag.label)
-                    ? 'bg-secondary1 text-white'
-                    : 'bg-white text-secondary2 border-[#364C84]'
+                    ? 'bg-[#14b8a6] text-white'
+                    : 'bg-white text-teal-500 border-[#14b8a6]'
                 ]"
               >
                 <component :is="tag.icon" class="w-4 h-4" /> {{ tag.label }}
@@ -111,7 +107,7 @@
             </div>
             <input
               v-model="formData.otherActivity"
-              class="mt-4 w-full px-4 py-2 text-sm bg-white border border-gray-300 rounded-xl focus:outline-none focus:ring-1 focus:ring-secondary1 shadow-sm"
+              class="mt-4 w-full px-4 py-2 text-sm bg-white border border-gray-300 rounded-xl focus:outline-none focus:ring-1 focus:ring-teal-500 shadow-sm"
               placeholder="Music, Nature, Art..."
             />
           </div>
@@ -122,7 +118,7 @@
             <textarea
               v-model="formData.specialNeeds"
               rows="3"
-              class="w-full px-4 py-3 text-sm bg-white border border-gray-300 rounded-xl focus:outline-none focus:ring-1 focus:ring-secondary1 shadow-sm"
+              class="w-full px-4 py-3 text-sm bg-white border border-gray-300 rounded-xl focus:outline-none focus:ring-1 focus:ring-teal-500 shadow-sm"
               placeholder="e.g., Allergies, mobility support, dietary requests..."
             ></textarea>
           </div>
@@ -138,7 +134,7 @@
           :class="[
             'px-8 py-3 rounded-full font-semibold transition-all duration-300 w-full text-lg shadow-md hover:shadow-xl hover:scale-105',
             formData.destination && formData.startDate && formData.endDate && formData.groupSize && formData.budget
-              ? ' bg-secondary2 text-white'
+              ? ' bg-black text-white'
               : 'bg-gray-300 text-gray-500 cursor-not-allowed'
           ]"
         >
@@ -234,25 +230,25 @@ const onDateRangeChange = ([start, end]: [Date | null, Date | null]) => {
 /* Wrapper styling */
 .datepicker-wrapper {
   @apply relative ;
-  border-color: #D0D9F5;
+  border-color: #179898;
 }
 
 /* Calendar icon style */
 .calendar-icon {
-  @apply absolute left-4 top-1/2 w-5 h-5 transform -translate-y-1/2 text-[#D0D9F5];
+  @apply absolute left-4 top-1/2 w-5 h-5 transform -translate-y-1/2 text-[#179898];
 }
 
 /* Centralized Datepicker input style */
 ::v-deep(.dp__input) {
   @apply px-3 py-2 border-2 rounded-xl shadow-md transition-all duration-300 ease-in-out  w-full pl-10 pr-4 py-2 text-base font-semibold bg-white rounded-xl outline-none transition-all duration-200 ease-in-out;
-  color: #D0D9F5;
-  border-color: #D0D9F5;
+  color: #179898;
+  border-color: #179898;
 }
 
 /* Placeholder color */
 ::v-deep(.dp__input::placeholder) {
   
-  color: #D0D9F5;
+  color: #179898;
 }
 
 /* Hover effect */
@@ -264,7 +260,7 @@ const onDateRangeChange = ([start, end]: [Date | null, Date | null]) => {
 /* Focus effect */
 ::v-deep(.dp__input:focus) {
   background-color: #ecfeff;
-  box-shadow: 0 0 0 2px #D0D9F5;
+  box-shadow: 0 0 0 2px #179898;
 }
 </style>
 

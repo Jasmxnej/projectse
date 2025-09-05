@@ -16,7 +16,7 @@
           :class="[
             'px-5 py-2 text-sm font-medium rounded-full transition-all duration-300',
             tripType === option.value
-              ? 'bg-secondary2 text-white shadow-md scale-105'
+              ? 'bg-teal-600 text-white shadow-md scale-105'
               : 'text-gray-700 hover:bg-white'
           ]"
         >

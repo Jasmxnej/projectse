@@ -5,7 +5,7 @@
       <button
         v-if="editable"
         @click="$emit('edit')"
-        class="px-3 py-1 bg-secondary2 text-white rounded-lg hover:bg-secondary2 transition-colors text-sm edit-button"
+        class="px-3 py-1 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors text-sm edit-button"
       >
         Edit Schedule
       </button>
