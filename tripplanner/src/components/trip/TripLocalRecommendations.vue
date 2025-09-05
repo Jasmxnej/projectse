@@ -256,7 +256,7 @@ const fetchLocalRecommendations = async () => {
     });
     
     if (response.data && response.data.categories) {
-      // Direct structured response
+
       categorizedRecommendations.value = response.data;
     } else if (response.data && response.data.text) {
       // Try to parse the text response as JSON

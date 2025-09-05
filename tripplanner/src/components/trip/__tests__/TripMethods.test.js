@@ -321,7 +321,7 @@ describe('Trip Methods Tests', () => {
       const wrapper = mount(TripWeatherForecast, {
         props: {
           destination: 'Bangkok',
-          tripId: '123'
+          tripId: '1'
         }
       });
 
@@ -467,7 +467,7 @@ describe('Trip Methods Tests', () => {
 
       const wrapper = mount(TripPackingList, {
         props: {
-          tripId: '123',
+          tripId: '1',
           destination: 'Bangkok'
         }
       });
@@ -520,7 +520,7 @@ describe('Trip Methods Tests', () => {
 
       const wrapper = mount(TripPackingList, {
         props: {
-          tripId: '123',
+          tripId: '1',
           destination: 'Bangkok'
         }
       });
@@ -563,7 +563,7 @@ describe('Trip Methods Tests', () => {
 
       const wrapper = mount(TripPackingList, {
         props: {
-          tripId: '123',
+          tripId: '1',
           destination: 'Bangkok'
         }
       });
@@ -596,7 +596,7 @@ describe('Trip Methods Tests', () => {
 
       const wrapper = mount(TripPackingList, {
         props: {
-          tripId: '123',
+          tripId: '1',
           destination: 'Bangkok'
         }
       });
@@ -617,7 +617,7 @@ describe('Trip Methods Tests', () => {
     test('testAddPackingItemFromSuggestion', () => {
       const wrapper = mount(TripPackingList, {
         props: {
-          tripId: '123',
+          tripId: '1',
           destination: 'Bangkok'
         }
       });
@@ -640,7 +640,7 @@ describe('Trip Methods Tests', () => {
     test('testAddPackingItemFromSuggestionIncrement', () => {
       const wrapper = mount(TripPackingList, {
         props: {
-          tripId: '123',
+          tripId: '1',
           destination: 'Bangkok'
         }
       });
