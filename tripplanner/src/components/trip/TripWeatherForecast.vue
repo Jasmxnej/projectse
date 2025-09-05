@@ -72,6 +72,10 @@ const props = defineProps({
   destination: {
     type: String,
     required: true
+  },
+  tripId: {
+    type: String,
+    required: true
   }
 });
 
@@ -79,6 +83,7 @@ defineEmits(['add-to-packing']);
 
 const weatherData = ref<any[]>([]);
 const weatherApiKey = '491dbb279c20fd8140c2f9442a8d3e29'; // OpenWeather API key
+const tripData = ref<any>(null);
 
 // Format date for weather display
 const formatWeatherDate = (dateString: string) => {
@@ -130,31 +135,49 @@ const getWeatherSummary = () => {
   return summary;
 };
 
+// Fetch trip details
+const fetchTripDetails = async () => {
+  if (!props.tripId) return;
+
+  try {
+    const response = await axios.get(`http://localhost:3002/api/trips/by-id/${props.tripId}`);
+    tripData.value = response.data;
+  } catch (error) {
+    console.error('Error fetching trip details:', error);
+  }
+};
+
 // Fetch weather forecast
 const fetchWeatherForecast = async () => {
-  if (!props.destination) return;
-  
+  if (!props.destination || !tripData.value) return;
+
   try {
     // Get coordinates for the destination
     const geoResponse = await axios.get(`https://api.openweathermap.org/geo/1.0/direct?q=${encodeURIComponent(props.destination)}&limit=1&appid=${weatherApiKey}`);
-    
+
     if (geoResponse.data.length > 0) {
       const { lat, lon } = geoResponse.data[0];
-      
-      // Get 5-day forecast
+
+      // Use trip dates instead of current date
+      const startDate = new Date(tripData.value.start_date);
+      const endDate = new Date(tripData.value.end_date);
+
+      // Get forecast for the trip period
       const forecastResponse = await axios.get(
         `https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lon}&units=metric&appid=${weatherApiKey}`
       );
-      
-      // Process forecast data (one entry per day)
+
+      // Process forecast data for trip dates only
       const processedData: any[] = [];
       const uniqueDays = new Set();
-      
+
       forecastResponse.data.list.forEach((item: any) => {
-        const date = new Date(item.dt * 1000).toDateString();
-        
-        if (!uniqueDays.has(date)) {
-          uniqueDays.add(date);
+        const itemDate = new Date(item.dt * 1000);
+        const dateString = itemDate.toDateString();
+
+        // Only include dates within the trip period
+        if (itemDate >= startDate && itemDate <= endDate && !uniqueDays.has(dateString)) {
+          uniqueDays.add(dateString);
           processedData.push({
             date: item.dt_txt,
             temp: item.main.temp,
@@ -165,15 +188,16 @@ const fetchWeatherForecast = async () => {
           });
         }
       });
-      
-      weatherData.value = processedData.slice(0, 5); // Limit to 5 days
+
+      weatherData.value = processedData;
     }
   } catch (error) {
     console.error('Error fetching weather:', error);
   }
 };
 
-onMounted(() => {
+onMounted(async () => {
+  await fetchTripDetails();
   fetchWeatherForecast();
 });
 </script>

@@ -157,7 +157,8 @@ describe('Trip Methods Tests', () => {
 
       const wrapper = mount(TripWeatherForecast, {
         props: {
-          destination: 'Bangkok'
+          destination: 'Bangkok',
+          tripId: '123'
         }
       });
 
@@ -180,7 +181,8 @@ describe('Trip Methods Tests', () => {
 
       const wrapper = mount(TripWeatherForecast, {
         props: {
-          destination: 'Bangkok'
+          destination: 'Bangkok',
+          tripId: '123'
         }
       });
 
@@ -202,7 +204,8 @@ describe('Trip Methods Tests', () => {
 
       const wrapper = mount(TripWeatherForecast, {
         props: {
-          destination: 'Bangkok'
+          destination: 'Bangkok',
+          tripId: '123'
         }
       });
 
@@ -220,7 +223,8 @@ describe('Trip Methods Tests', () => {
     test('testForcastWeatherDateInvalid', () => {
       const wrapper = mount(TripWeatherForecast, {
         props: {
-          destination: 'Bangkok'
+          destination: 'Bangkok',
+          tripId: '123'
         }
       });
 
@@ -237,9 +241,16 @@ describe('Trip Methods Tests', () => {
   // Test fetchWeatherForecast method
   describe('fetchWeatherForecast', () => {
     test('testFetchWeatherForecastSuccess', async () => {
-      // Mock geocoding API
+      // Mock trip API
       axios.get.mockImplementation((url) => {
-        if (url.includes('geo')) {
+        if (url.includes('/api/trips/by-id/123')) {
+          return Promise.resolve({
+            data: {
+              start_date: '2024-01-01',
+              end_date: '2024-01-05'
+            }
+          });
+        } else if (url.includes('geo')) {
           return Promise.resolve({
             data: [{ lat: 13.7563, lon: 100.5018 }]
           });
@@ -248,11 +259,25 @@ describe('Trip Methods Tests', () => {
             data: {
               list: [
                 {
-                  dt: Date.now() / 1000,
+                  dt: new Date('2024-01-01T12:00:00').getTime() / 1000,
                   dt_txt: '2024-01-01 12:00:00',
                   main: { temp: 30, humidity: 65 },
                   weather: [{ description: 'clear sky', icon: '01d' }],
                   wind: { speed: 5 }
+                },
+                {
+                  dt: new Date('2024-01-02T12:00:00').getTime() / 1000,
+                  dt_txt: '2024-01-02 12:00:00',
+                  main: { temp: 28, humidity: 70 },
+                  weather: [{ description: 'sunny', icon: '02d' }],
+                  wind: { speed: 6 }
+                },
+                {
+                  dt: new Date('2024-01-03T12:00:00').getTime() / 1000,
+                  dt_txt: '2024-01-03 12:00:00',
+                  main: { temp: 25, humidity: 75 },
+                  weather: [{ description: 'cloudy', icon: '03d' }],
+                  wind: { speed: 4 }
                 }
               ]
             }
@@ -262,11 +287,13 @@ describe('Trip Methods Tests', () => {
 
       const wrapper = mount(TripWeatherForecast, {
         props: {
-          destination: 'Bangkok'
+          destination: 'Bangkok',
+          tripId: '123'
         }
       });
 
-      // Call fetch method
+      // Call fetch methods in order
+      await wrapper.vm.fetchTripDetails();
       await wrapper.vm.fetchWeatherForecast();
 
       // Check if weather data was set
@@ -277,16 +304,29 @@ describe('Trip Methods Tests', () => {
     });
 
     test('testFetchWeatherForecastApiError', async () => {
-      // Mock API error
-      axios.get.mockRejectedValue(new Error('API Error'));
-
-      const wrapper = mount(TripWeatherForecast, {
-        props: {
-          destination: 'Bangkok'
+      // Mock trip API success but weather API error
+      axios.get.mockImplementation((url) => {
+        if (url.includes('/api/trips/by-id/123')) {
+          return Promise.resolve({
+            data: {
+              start_date: '2024-01-01',
+              end_date: '2024-01-05'
+            }
+          });
+        } else {
+          return Promise.reject(new Error('API Error'));
         }
       });
 
-      // Call fetch method
+      const wrapper = mount(TripWeatherForecast, {
+        props: {
+          destination: 'Bangkok',
+          tripId: '123'
+        }
+      });
+
+      // Call fetch methods
+      await wrapper.vm.fetchTripDetails();
       await wrapper.vm.fetchWeatherForecast();
 
       // Check that console.error was called with the exact message from the code

@@ -195,6 +195,7 @@
             <div v-else-if="selectedView === 'weather'">
               <TripWeatherForecast
                 :destination="trip.destination"
+                :trip-id="trip.id"
                 @add-to-packing="addPackingItemFromSuggestion"
                 :use-saved-data="true"
               />
