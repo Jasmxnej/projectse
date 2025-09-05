@@ -64,6 +64,9 @@ describe('Trip Methods Tests', () => {
       // Wait for the async generateBudgetAnalysis to complete
       await new Promise(resolve => setTimeout(resolve, 100));
 
+      // Check that console.error was called with the exact message from the code
+      expect(console.error).toHaveBeenCalledWith('Error generating budget analysis:', expect.any(Error));
+
       // Component should still work
       expect(wrapper.exists()).toBe(true);
       // Check if fallback message was set
@@ -113,6 +116,35 @@ describe('Trip Methods Tests', () => {
       const tipsText = wrapper.vm.packingTips.join(' ').toLowerCase();
       expect(tipsText).toContain('rain');
     });
+
+    test('testGeneratePackingTipsApiError', async () => {
+      // Mock API error
+      axios.post.mockRejectedValue(new Error('API Error'));
+
+      const weatherData = [
+        { temp: 35, description: 'clear sky', humidity: 60 },
+        { temp: 32, description: 'sunny', humidity: 65 }
+      ];
+
+      const wrapper = mount(WeatherPackingTips, {
+        props: {
+          weatherData: weatherData,
+          destination: 'Bangkok'
+        }
+      });
+
+      // Wait for tips to generate and error handling to complete
+      await wrapper.vm.$nextTick();
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      // Check that console.error was called with the exact message from the code
+      expect(console.error).toHaveBeenCalledWith('Error getting destination-specific packing tips:', expect.any(Error));
+
+      // The function should still process weather data and not crash
+      expect(wrapper.vm.packingTips).toBeDefined();
+      expect(wrapper.vm.quickAddItems).toBeDefined();
+      expect(wrapper.exists()).toBe(true);
+    });
   });
 
   // Test getWeatherSummary method
@@ -160,6 +192,45 @@ describe('Trip Methods Tests', () => {
 
       // Check if summary contains rain information
       expect(summary).toContain('rain');
+    });
+
+    test('testGetWeatherSummaryInvalidDate', () => {
+      const weatherData = [
+        { temp: 25, description: 'clear sky', humidity: 60, date: 'invalid-date' },
+        { temp: 22, description: 'sunny', humidity: 65, date: null }
+      ];
+
+      const wrapper = mount(TripWeatherForecast, {
+        props: {
+          destination: 'Bangkok'
+        }
+      });
+
+      // Set weather data with invalid dates
+      wrapper.vm.weatherData = weatherData;
+
+      // Get summary
+      const summary = wrapper.vm.getWeatherSummary();
+
+      // Check if summary was generated or not
+      expect(summary).toContain('The average temperature');
+      expect(typeof summary).toBe('string');
+    });
+
+    test('testForcastWeatherDateInvalid', () => {
+      const wrapper = mount(TripWeatherForecast, {
+        props: {
+          destination: 'Bangkok'
+        }
+      });
+
+      // Test with invalid date string
+      const result1 = wrapper.vm.formatWeatherDate('invalid-date');
+      expect(result1).toBe('Invalid Date');
+
+      // Test with empty string
+      const result2 = wrapper.vm.formatWeatherDate('');
+      expect(result2).toBe('Invalid Date');
     });
   });
 
@@ -217,6 +288,9 @@ describe('Trip Methods Tests', () => {
 
       // Call fetch method
       await wrapper.vm.fetchWeatherForecast();
+
+      // Check that console.error was called with the exact message from the code
+      expect(console.error).toHaveBeenCalledWith('Error fetching weather:', expect.any(Error));
 
       // Component should still work
       expect(wrapper.exists()).toBe(true);
@@ -280,10 +354,12 @@ describe('Trip Methods Tests', () => {
       // Wait for any async operations
       await new Promise(resolve => setTimeout(resolve, 100));
 
+      // Check that console.error was called with the exact message from the code
+      expect(console.error).toHaveBeenCalledWith('Error fetching local recommendations:', expect.any(Error));
+
       // Check if fallback recommendations were generated
       expect(wrapper.vm.categorizedRecommendations.categories.length).toBeGreaterThan(0);
 
-      // Clean up
       wrapper.unmount();
     });
   });
@@ -305,6 +381,24 @@ describe('Trip Methods Tests', () => {
 
       // Check if recommendations were generated
       expect(wrapper.vm.categorizedRecommendations.categories.length).toBe(4); // Should have 4 categories
+      expect(wrapper.vm.categorizedRecommendations.categories[0].name).toBe('Food & Drinks');
+
+      // Clean up
+      wrapper.unmount();
+    });
+
+    test('testGenerateFallbackRecommendationsEmptyDestination', () => {
+      const wrapper = mount(TripLocalRecommendations, {
+        props: {
+          destination: ''
+        }
+      });
+
+      // Call fallback method
+      wrapper.vm.generateFallbackRecommendations();
+
+      // Check if recommendations were generated with default destination
+      expect(wrapper.vm.categorizedRecommendations.categories.length).toBe(4);
       expect(wrapper.vm.categorizedRecommendations.categories[0].name).toBe('Food & Drinks');
 
       // Clean up
@@ -338,13 +432,9 @@ describe('Trip Methods Tests', () => {
         }
       });
 
-      // Wait for component to initialize and load empty data
+     
       await new Promise(resolve => setTimeout(resolve, 10));
-
-      // Override the loadPackingList method to prevent default data loading
       wrapper.vm.loadPackingList = jest.fn().mockResolvedValue();
-
-      // Manually set initial categories to enable categorized mode
       wrapper.vm.categorizedPackingList = {
         categories: [
           { name: 'Essentials', items: [] }
@@ -474,6 +564,9 @@ describe('Trip Methods Tests', () => {
       // Call save method
       await wrapper.vm.savePackingList();
 
+      // Check that console.error was called with the exact message from the code
+      expect(console.error).toHaveBeenCalledWith('Error saving packing list to API:', expect.any(Error));
+
       // Component should still work
       expect(wrapper.exists()).toBe(true);
     });
@@ -529,6 +622,44 @@ describe('Trip Methods Tests', () => {
 
       // Check if quantity was incremented
       expect(wrapper.vm.categorizedPackingList.categories[0].items[0].quantity).toBe(2);
+    });
+
+    test('testAddPackingItemFromSuggestionApiError', () => {
+      // Mock API error for savePackingList
+      axios.post.mockRejectedValue(new Error('API Error'));
+
+      // Mock localStorage to return null (no saved data)
+      const localStorageMock = {
+        getItem: jest.fn().mockReturnValue(null),
+        setItem: jest.fn(),
+        removeItem: jest.fn(),
+        clear: jest.fn(),
+      };
+      Object.defineProperty(window, 'localStorage', {
+        value: localStorageMock,
+        writable: true,
+      });
+
+      const wrapper = mount(TripPackingList, {
+        props: {
+          tripId: '1',
+          destination: 'Bangkok'
+        }
+      });
+
+      // Set initial data
+      wrapper.vm.categorizedPackingList = {
+        categories: [
+          { name: 'Electronics', items: [] }
+        ]
+      };
+
+      // Add item from suggestion
+      wrapper.vm.addPackingItemFromSuggestion('Phone Charger');
+
+      // Check if item was still added (should work despite API error due to localStorage fallback)
+      expect(wrapper.vm.categorizedPackingList.categories[0].items.length).toBe(1);
+      expect(wrapper.vm.categorizedPackingList.categories[0].items[0].name).toBe('Phone Charger');
     });
   });
 });
