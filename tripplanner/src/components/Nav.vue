@@ -1,9 +1,6 @@
 <template>
 <nav
-  :class="[
-    'fixed top-0 left-0 w-full z-50 px-8 py-3 flex justify-between items-center transition-all duration-300 bg-transparent',
-    isHome ? 'text-white' : 'text-gray-800'
-  ]"
+  class="fixed top-0 left-0 w-full z-50 px-8 py-3 flex justify-between items-center transition-all duration-300 bg-white text-secondary2 shadow-sm"
 >
 
     <!-- Left Brand -->
@@ -43,7 +40,7 @@
         to="/contact"
         class="nav-link text-sm font-medium tracking-wide uppercase transition-colors duration-200"
         :class="{ 
-          'text-secondary20 border-b-2 border-secondary2 pb-1': isActive('/contact'),
+          'text-secondary2 border-b-2 border-secondary2 pb-1': isActive('/contact'),
           'hover:text-secondary2': !isActive('/contact')
         }"
       >
@@ -66,13 +63,13 @@
       <template v-if="!authStore.currentUser">
         <RouterLink 
           to="/login" 
-          class="nav-link text-sm font-medium tracking-wide uppercase transition-colors duration-200 hover:text-blue-600"
+          class="nav-link text-sm font-medium tracking-wide uppercase transition-colors duration-200 hover:text-secondary2"
         >
           LOG IN
         </RouterLink>
         <RouterLink 
           to="/signup" 
-          class="nav-link text-sm font-medium tracking-wide uppercase transition-colors duration-200 hover:text-blue-600"
+          class="nav-link text-sm font-medium tracking-wide uppercase transition-colors duration-200 hover:text-secondary2"
         >
           SIGN UP
         </RouterLink>
@@ -131,7 +128,6 @@ const router = useRouter()
 const route = useRoute()
 
 const user = computed(() => authStore.currentUser)
-const isHome = computed(() => route.path === '/home'|| route.path === '/about')
 const showDropdown = ref(false)
 
 const toggleDropdown = () => {

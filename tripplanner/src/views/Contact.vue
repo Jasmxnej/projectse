@@ -2,13 +2,30 @@
   <Nav/>
   <div class="min-h-screen bg-background ">
     <!-- Header -->
-    <section class="bg-accent1 py-20">
-      <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center font-playfair">
-        <h1 class="text-4xl lg:text-4xl font-bold text-accent2 mt-10 mb-4">
-          Contact Us
+   <section class="relative py-20 overflow-hidden bg-white">
+    <!-- Banner with circle -->
+    <div class="relative flex items-center justify-center">
+      <svg 
+        viewBox="0 0 1400 300" 
+        class="w-full max-w-6xl h-auto"
+        preserveAspectRatio="xMidYMid meet"
+      >
+        <!-- Rectangle banner -->
+        <rect x="0" y="100" width="1400" height="100" fill="#000000" />
+        
+        <!-- Circle in the middle -->
+        <circle cx="700" cy="150" r="100" fill="#000000" />
+      </svg>
+      
+      <!-- Text overlay -->
+      <div class="absolute inset-0 flex items-center justify-center">
+        <h1 class="text-3xl lg:text-4xl font-bold text-white lowercase">
+          contact us
         </h1>
       </div>
-    </section>
+    </div>
+  </section>
+
 
     <!-- Main Content -->
     <div class="max-w-7xl mx-auto px-4 py-12">

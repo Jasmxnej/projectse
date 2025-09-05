@@ -3,9 +3,9 @@
     <Navbar />
     
     <!-- Hero Section - Light Green Background -->
-    <section class="bg-accent1 py-20">
+    <section class="bg-gray-900 py-20">
       <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center font-playfair">
-        <h1 class="text-4xl lg:text-4xl font-bold text-accent2 mt-10 mb-4">
+        <h1 class="text-4xl lg:text-4xl font-bold text-background mt-10 mb-4">
           About Us
         </h1>
       </div>
