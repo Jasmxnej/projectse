@@ -5,7 +5,7 @@
       <button
         v-if="editable"
         @click="$emit('edit')"
-        class="px-3 py-1 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors text-sm edit-button"
+        class="px-3 py-1 bg-teal-600 text-white rounded-lg transition-colors text-sm edit-button"
       >
         Edit Flight
       </button>
@@ -116,13 +116,38 @@ const formatPrice = (price: number) => {
 
 const formatDate = (dateString: string | undefined | null) => {
   if (!dateString) return 'N/A';
-  
+
   try {
-    const date = new Date(dateString);
+    let date;
+
+    // Handle different date formats
+    if (typeof dateString === 'number') {
+      // If it's a timestamp
+      date = new Date(dateString);
+    } else if (typeof dateString === 'string') {
+      // Try different string formats
+      if (dateString.includes('T')) {
+        // ISO format with time
+        date = new Date(dateString);
+      } else if (dateString.includes(' ')) {
+        // Format like "2025-09-15 14:30:00"
+        date = new Date(dateString.split(' ')[0]); // Take only the date part
+      } else if (dateString.match(/^\d{4}-\d{2}-\d{2}$/)) {
+        // Date only format
+        date = new Date(dateString);
+      } else {
+        // Try parsing as-is
+        date = new Date(dateString);
+      }
+    } else {
+      return 'Invalid Date';
+    }
+
     // Check if date is valid
     if (isNaN(date.getTime())) {
       return 'Invalid Date';
     }
+
     return date.toLocaleDateString(undefined, {
       year: 'numeric',
       month: 'long',
@@ -136,13 +161,42 @@ const formatDate = (dateString: string | undefined | null) => {
 
 const formatTime = (dateString: string | undefined | null) => {
   if (!dateString) return 'N/A';
-  
+
   try {
-    const date = new Date(dateString);
+    let date;
+
+    // Handle different date formats
+    if (typeof dateString === 'number') {
+      // If it's a timestamp
+      date = new Date(dateString);
+    } else if (typeof dateString === 'string') {
+      // Try different string formats
+      if (dateString.includes('T')) {
+        // ISO format with time
+        date = new Date(dateString);
+      } else if (dateString.includes(' ')) {
+        // Format like "2025-09-15 14:30:00"
+        date = new Date(dateString.replace(' ', 'T'));
+      } else if (dateString.match(/^\d{4}-\d{2}-\d{2}$/)) {
+        // Date only format, assume noon
+        date = new Date(dateString + 'T12:00:00');
+      } else if (dateString.match(/^\d{2}:\d{2}:\d{2}$/)) {
+        // HH:MM:SS format from old saves
+        const [h, m] = dateString.split(':');
+        return `${h}:${m}`;
+      } else {
+        // Try parsing as-is
+        date = new Date(dateString);
+      }
+    } else {
+      return 'Invalid Time';
+    }
+
     // Check if date is valid
     if (isNaN(date.getTime())) {
       return 'Invalid Time';
     }
+
     return date.toLocaleTimeString(undefined, {
       hour: '2-digit',
       minute: '2-digit'
@@ -155,13 +209,38 @@ const formatTime = (dateString: string | undefined | null) => {
 
 const formatDateTime = (dateString: string | undefined | null) => {
   if (!dateString) return 'N/A';
-  
+
   try {
-    const date = new Date(dateString);
+    let date;
+
+    // Handle different date formats
+    if (typeof dateString === 'number') {
+      // If it's a timestamp
+      date = new Date(dateString);
+    } else if (typeof dateString === 'string') {
+      // Try different string formats
+      if (dateString.includes('T')) {
+        // ISO format with time
+        date = new Date(dateString);
+      } else if (dateString.includes(' ')) {
+        // Format like "2025-09-15 14:30:00"
+        date = new Date(dateString.replace(' ', 'T'));
+      } else if (dateString.match(/^\d{4}-\d{2}-\d{2}$/)) {
+        // Date only format, assume noon
+        date = new Date(dateString + 'T12:00:00');
+      } else {
+        // Try parsing as-is
+        date = new Date(dateString);
+      }
+    } else {
+      return 'Invalid Date';
+    }
+
     // Check if date is valid
     if (isNaN(date.getTime())) {
       return 'Invalid Date';
     }
+
     return date.toLocaleString(undefined, {
       year: 'numeric',
       month: 'long',

@@ -195,7 +195,8 @@
             <div v-else-if="selectedView === 'weather'">
               <TripWeatherForecast
                 :destination="trip.destination"
-                :trip-id="trip.id"
+                :start-date="trip.start_date"
+                :end-date="trip.end_date"
                 @add-to-packing="addPackingItemFromSuggestion"
                 :use-saved-data="true"
               />
@@ -360,9 +361,9 @@ const fetchTripSummary = async () => {
         from_iata: flight.value.from_iata || flight.value.fromIata || 'N/A',
         to_iata: flight.value.to_iata || flight.value.toIata || 'N/A',
         departure_date: flight.value.departure_date || flight.value.departureDate || new Date().toISOString(),
-        departure_time: flight.value.departure_time || flight.value.departureTime || new Date().toISOString(),
+        departure_time: flight.value.departure_time || flight.value.departureTime || flight.value.departure || null,
         arrival_date: flight.value.arrival_date || flight.value.arrivalDate || new Date().toISOString(),
-        arrival_time: flight.value.arrival_time || flight.value.arrivalTime || new Date().toISOString(),
+        arrival_time: flight.value.arrival_time || flight.value.arrivalTime || flight.value.arrival || null,
         travel_class: flight.value.travel_class || flight.value.travelClass || 'ECONOMY',
         price: flight.value.price || 0,
         currency: flight.value.currency || 'THB',

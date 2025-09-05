@@ -74,99 +74,12 @@
             
             <!-- Flight Details Tab -->
             <div v-if="selectedView === 'flight'">
-              <h2 class="text-2xl font-bold text-gray-800 mb-4">Flight Details</h2>
-              <div v-if="flight" class="space-y-4">
-                <div class="bg-gray-50 rounded-xl p-6 border border-gray-200">
-                  <div class="flex flex-col md:flex-row justify-between">
-                    <div class="space-y-2 mb-4 md:mb-0">
-                      <p class="text-xl font-bold text-gray-800">{{ flight.airline }}</p>
-                      <div class="flex items-center space-x-2">
-                        <span class="text-lg font-medium">{{ flight.from_city }}</span>
-                        <span class="text-sm text-gray-500">({{ flight.from_iata }})</span>
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
-                          <path fill-rule="evenodd" d="M12.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-2.293-2.293a1 1 0 010-1.414z" clip-rule="evenodd" />
-                        </svg>
-                        <span class="text-lg font-medium">{{ flight.to_city }}</span>
-                        <span class="text-sm text-gray-500">({{ flight.to_iata }})</span>
-                      </div>
-                    </div>
-                    <div class="text-right">
-                      <p class="text-2xl font-bold text-teal-600">{{ formatPrice(flight.price) }}</p>
-                      <p class="text-sm text-gray-500">{{ flight.travel_class }} Class</p>
-                    </div>
-                  </div>
-                  
-                  <div class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <p class="text-sm text-gray-500">Departure</p>
-                      <p class="text-lg font-medium">{{ formatDateTime(flight.departure_time || flight.departureTime) }}</p>
-                    </div>
-                    <div>
-                      <p class="text-sm text-gray-500">Arrival</p>
-                      <p class="text-lg font-medium">{{ formatDateTime(flight.arrival_time || flight.arrivalTime) }}</p>
-                    </div>
-                    <div>
-                      <p class="text-sm text-gray-500">Duration</p>
-                      <p class="text-lg font-medium">{{ formatDuration(flight.duration) }}</p>
-                    </div>
-                    <div>
-                      <p class="text-sm text-gray-500">Stops</p>
-                      <p class="text-lg font-medium">{{ flight.stops || 0 }} {{ (flight.stops || 0) === 1 ? 'stop' : 'stops' }}</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div v-else class="text-center py-8 text-gray-500 bg-gray-50 rounded-xl">
-                <p>No flight selected for this trip.</p>
-              </div>
+              <FlightDetailsCard :flight="flight" :editable="false" />
             </div>
             
             <!-- Hotel Details Tab -->
             <div v-else-if="selectedView === 'hotel'">
-              <h2 class="text-2xl font-bold text-gray-800 mb-4">Hotel Details</h2>
-              <div v-if="hotel" class="space-y-4">
-                <div class="bg-gray-50 rounded-xl p-6 border border-gray-200">
-                  <div class="flex flex-col md:flex-row">
-                    <div class="md:w-1/3 mb-4 md:mb-0 md:mr-6">
-                      <img
-                        :src="hotel.image_url || `https://source.unsplash.com/640x360/?hotel,${hotel.name}`"
-                        :alt="hotel.name"
-                        class="w-full h-48 object-cover rounded-lg shadow-md"
-                        @error="handleImageError"
-                      />
-                    </div>
-                    <div class="md:w-2/3">
-                      <h3 class="text-xl font-bold text-gray-800 mb-2">{{ hotel.name }}</h3>
-                      <p class="text-gray-600 mb-2">{{ hotel.location }}</p>
-                      <div class="flex items-center mb-2">
-                        <div class="flex text-yellow-400">
-                          <span v-for="i in Math.floor(hotel.rating || 0)" :key="i">★</span>
-                          <span v-for="i in (5 - Math.floor(hotel.rating || 0))" :key="i + 5" class="text-gray-300">★</span>
-                        </div>
-                        <span class="ml-2 text-gray-600">{{ hotel.rating }} / 5</span>
-                      </div>
-                      <p class="text-gray-700 mb-4">{{ hotel.description }}</p>
-                      <div class="flex justify-between items-center">
-                        <div>
-                          <p class="text-sm text-gray-500">Check-in</p>
-                          <p class="font-medium">{{ formatDate(hotel.check_in_date) }}</p>
-                        </div>
-                        <div>
-                          <p class="text-sm text-gray-500">Check-out</p>
-                          <p class="font-medium">{{ formatDate(hotel.check_out_date) }}</p>
-                        </div>
-                        <div>
-                          <p class="text-sm text-gray-500">Price</p>
-                          <p class="text-xl font-bold text-teal-600">{{ formatPrice(hotel.price) }}</p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div v-else class="text-center py-8 text-gray-500 bg-gray-50 rounded-xl">
-                <p>No hotel selected for this trip.</p>
-              </div>
+              <HotelDetailsCard :hotel="hotel" :destination="trip?.destination" :editable="false" />
             </div>
             
             <!-- Daily Schedule Tab -->
@@ -180,7 +93,7 @@
                     <div
                       v-for="activity in parseActivities(day.activities)"
                       :key="activity.id"
-                      class="border border-gray-200 rounded-lg overflow-hidden bg-white shadow-sm hover:shadow-md transition-shadow"
+                      class="border border-gray-200 rounded-lg overflow-hidden bg-white shadow-sm transition-shadow"
                     >
                       <img
                         :src="activity.image || `https://source.unsplash.com/640x360/?${activity.name},travel`"
@@ -224,7 +137,8 @@
             <div v-else-if="selectedView === 'weather'">
               <TripWeatherForecast
                 :destination="trip.destination"
-                :trip-id="trip.id"
+                :start-date="trip.start_date"
+                :end-date="trip.end_date"
                 @add-to-packing="addPackingItemFromSuggestion"
                 ref="weatherForecastComponent"
               />
@@ -265,6 +179,8 @@ import TripWeatherForecast from '@/components/trip/TripWeatherForecast.vue';
 import TripPackingList from '@/components/trip/TripPackingList.vue';
 import TripLocalRecommendations from '@/components/trip/TripLocalRecommendations.vue';
 import TripBudgetAnalysis from '@/components/trip/TripBudgetAnalysis.vue';
+import FlightDetailsCard from '@/components/trip/FlightDetailsCard.vue';
+import HotelDetailsCard from '@/components/trip/HotelDetailsCard.vue';
 
 const route = useRoute();
 const router = useRouter();
@@ -337,6 +253,9 @@ const fetchTripSummary = async () => {
       other_activity: tripStore.otherActivity,
       special_needs: tripStore.specialNeeds,
     };
+
+
+
     
     // Ensure flight data is properly formatted with ALL database fields
     if (tripStore.flights.length > 0) {
@@ -680,6 +599,25 @@ const handleActivityImageError = (e: Event) => {
   }
 };
 
+// Edit functionality
+const editTripDetails = () => {
+  if (trip.value?.id) {
+    router.push({ name: 'modifystartplan', params: { tripId: trip.value.id } });
+  }
+};
+
+const editFlight = () => {
+  if (trip.value?.id) {
+    router.push({ name: 'modifyflight', params: { tripId: trip.value.id } });
+  }
+};
+
+const editHotel = () => {
+  if (trip.value?.id) {
+    router.push({ name: 'modifyhotel', params: { tripId: trip.value.id } });
+  }
+};
+
 // Add packing item from suggestion
 const addPackingItemFromSuggestion = (itemName: string) => {
   if (packingListComponent.value) {
@@ -689,7 +627,7 @@ const addPackingItemFromSuggestion = (itemName: string) => {
 
 onMounted(async () => {
   await fetchTripSummary();
-  
+
   // Wait a short time for components to be mounted
   setTimeout(() => {
     // Preload weather and recommendations data
@@ -699,7 +637,7 @@ onMounted(async () => {
         console.log('Preloading weather data...');
         weatherForecastComponent.value.fetchWeatherForecast?.();
       }
-      
+
       if (localRecommendationsComponent.value) {
         console.log('Preloading recommendations data...');
         localRecommendationsComponent.value.fetchLocalRecommendations?.();

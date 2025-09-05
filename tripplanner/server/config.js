@@ -10,8 +10,8 @@ module.exports = {
     secret: process.env.JWT_SECRET || 'supersecret'
   },
   amadeus: {
-    clientId: process.env.AMADEUS_CLIENT_ID || 'qOKjln8m74nBo9P4wtXeqe67K91Oz2V7',
-    clientSecret: process.env.AMADEUS_CLIENT_SECRET || 'lGbaXcM1vdkIY243'
+    clientId: process.env.AMADEUS_CLIENT_ID || 'QO1aze58Arzic0vmaNRVM459PzSL0wpu',
+    clientSecret: process.env.AMADEUS_CLIENT_SECRET || '1MhsuOVg3xDwBhgW'
   },
   gemini: {
     apiKey: process.env.GEMINI_API_KEY

@@ -254,8 +254,8 @@ export function useFlightSearch() {
         // Extract detailed flight information
         const departureDateTime = new Date(seg0.departure.at);
         const arrivalDateTime = new Date(segN.arrival.at);
-        const departureTime = departureDateTime.toTimeString().split(' ')[0]; // Extract HH:MM:SS
-        const arrivalTime = arrivalDateTime.toTimeString().split(' ')[0]; // Extract HH:MM:SS
+        const departureTime = seg0.departure.at; // Full ISO string
+        const arrivalTime = segN.arrival.at; // Full ISO string
         const departureDate = departureDateTime.toISOString().split('T')[0]; // YYYY-MM-DD
         const arrivalDate = arrivalDateTime.toISOString().split('T')[0]; // YYYY-MM-DD
         
@@ -268,7 +268,7 @@ export function useFlightSearch() {
         
         return {
           ...flight,
-          airline: flightDictionaries.value.carriers[seg0.carrierCode] || 'Unknown',
+          airline: seg0.carrierCode || 'Unknown',
           fromCity: flightDictionaries.value.locations[seg0.departure.iataCode]?.cityCode || seg0.departure.iataCode,
           toCity: flightDictionaries.value.locations[segN.arrival.iataCode]?.cityCode || segN.arrival.iataCode,
           from_iata: seg0.departure.iataCode,

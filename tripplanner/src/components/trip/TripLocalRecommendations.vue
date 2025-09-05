@@ -31,7 +31,7 @@
                   <p class="text-gray-700 text-sm leading-relaxed">{{ item.description }}</p>
                 </div>
                 <div class="flex-shrink-0 w-20 h-20">
-                  <img :key="`${item.id}-${imageRefreshCounter}`"
+                  <img :key="item.id"
                        :src="getImageUrl(item, category.name)"
                        :alt="item.name"
                        class="w-full h-full object-cover rounded-lg"
@@ -60,8 +60,8 @@
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
                 </svg>
               </div>
-              <!-- Actual image with key to force re-render -->
-              <img :key="`${rec.id}-${imageRefreshCounter}`"
+              <!-- Actual image -->
+              <img :key="rec.id"
                    :src="getImageUrl(rec, rec.category || '')"
                    :alt="rec.name"
                    class="w-full h-48 object-cover"
@@ -115,44 +115,51 @@ const props = defineProps({
 const localRecommendations = ref<any[]>([]);
 const categorizedRecommendations = ref<any>({ categories: [] });
 const isLoading = ref(false);
-const imageRefreshCounter = ref(0); // Counter to force image refresh
 
 // Function to get the correct image URL
 const getImageUrl = (item: any, categoryName: string) => {
   if (!item) return '';
-  
+
   // Check if image exists and is a valid URL
   if (item.image) {
     // If it's a full URL (starts with http:// or https://)
     if (item.image.startsWith('http://') || item.image.startsWith('https://')) {
       return item.image;
     }
-    
+
     // If it's a relative URL, make it absolute
     if (item.image.startsWith('/')) {
       return `${window.location.origin}${item.image}`;
     }
-    
+
     // If it's just a filename, assume it's in the public folder
     return `${window.location.origin}/${item.image}`;
   }
-  
+
   // If item already has a cachedImageUrl (from error handling), use that
   if (item.cachedImageUrl) {
     return item.cachedImageUrl;
   }
-  
+
   // Initialize imageLoaded property
   if (item.imageLoaded === undefined) {
     item.imageLoaded = false;
   }
-  
+
+  // Prevent multiple API calls for the same item
+  if (item.imageApiCalled) {
+    // Return placeholder if API was already called
+    const itemName = item.name || 'attraction';
+    return `https://via.placeholder.com/640x360/e5e7eb/6b7280?text=${encodeURIComponent(itemName)}`;
+  }
+
   // Start loading image from Unsplash API asynchronously
   if (!item.imageLoading) {
     item.imageLoading = true;
+    item.imageApiCalled = true;
     loadImageFromUnsplash(item, categoryName);
   }
-  
+
   // Return placeholder while loading
   const itemName = item.name || 'attraction';
   return `https://via.placeholder.com/640x360/e5e7eb/6b7280?text=${encodeURIComponent(itemName)}`;
@@ -183,11 +190,10 @@ const loadImageFromUnsplash = async (item: any, categoryName: string) => {
     const imageUrl = response.data.image;
     
     if (imageUrl) {
-      // Store the URL in the item and trigger re-render
+      // Store the URL in the item
       item.cachedImageUrl = imageUrl;
       item.image = imageUrl;
-      item.imageLoaded = false; // Reset to trigger reload
-      imageRefreshCounter.value++; // Force re-render
+      item.imageLoaded = true; // Mark as loaded
     }
   } catch (error) {
     console.error('Error fetching image from Unsplash API:', error);
@@ -467,101 +473,52 @@ const generateFallbackRecommendations = () => {
 
 const handleRecommendationImageError = async (e: Event, item: any, categoryName: string) => {
   const target = e.target as HTMLImageElement;
-  if (target) {
+  if (target && !item.imageErrorHandled) {
+    item.imageErrorHandled = true;
     const itemName = item.name || target.alt || 'attraction';
     const destination = props.destination || 'travel';
-    
-    // Try to get a new image from Unsplash API
-    let searchTerms = '';
-    if (categoryName.includes('Food')) {
-      searchTerms = `${destination} food cuisine`;
-    } else if (categoryName.includes('Shopping')) {
-      searchTerms = `${destination} souvenir market`;
-    } else if (categoryName.includes('Tips')) {
-      searchTerms = `${destination} culture tradition`;
-    } else if (categoryName.includes('Activities')) {
-      searchTerms = `${destination} activity tourism`;
-    } else {
-      searchTerms = `${destination} travel tourism`;
+
+    // Prevent multiple API calls for the same item
+    if (item.imageApiCalled) {
+      // Use placeholder if API was already called
+      const placeholderUrl = `https://via.placeholder.com/640x360/e5e7eb/6b7280?text=${encodeURIComponent(itemName)}`;
+      item.cachedImageUrl = placeholderUrl;
+      target.src = placeholderUrl;
+      target.onerror = null; // Prevent infinite error loop
+      item.imageLoaded = true;
+      return;
     }
-    
+
+    // Mark that we're attempting to fetch an image
+    item.imageApiCalled = true;
+
+    // Try to get a new image from Unsplash API with generic search
     try {
-      // Try to get a new image from the Unsplash API
+      const searchTerms = `${destination} travel`;
       const response = await axios.get(`http://localhost:3002/api/unsplash/image?place=${encodeURIComponent(searchTerms)}`);
       const imageUrl = response.data.image;
-      
+
       if (imageUrl && imageUrl !== target.src) {
         item.cachedImageUrl = imageUrl;
         target.src = imageUrl;
-        imageRefreshCounter.value++;
+        item.imageLoaded = true;
         return;
       }
     } catch (error) {
       console.error('Error fetching fallback image from Unsplash API:', error);
     }
-    
-    // If API fails, try a more generic search
-    try {
-      const response = await axios.get(`http://localhost:3002/api/unsplash/image?place=${encodeURIComponent(destination + ' travel')}`);
-      const imageUrl = response.data.image;
-      
-      if (imageUrl && imageUrl !== target.src) {
-        item.cachedImageUrl = imageUrl;
-        target.src = imageUrl;
-        imageRefreshCounter.value++;
-        return;
-      }
-    } catch (error) {
-      console.error('Error fetching generic fallback image:', error);
-    }
-    
+
     // Final fallback to placeholder
     const placeholderUrl = `https://via.placeholder.com/640x360/e5e7eb/6b7280?text=${encodeURIComponent(itemName)}`;
     item.cachedImageUrl = placeholderUrl;
     target.src = placeholderUrl;
     target.onerror = null; // Prevent infinite error loop
     item.imageLoaded = true;
-    imageRefreshCounter.value++;
   }
 };
 
 // Generate recommendations when component is mounted
 onMounted(() => {
   fetchLocalRecommendations();
-  
-  // Set up a timer to refresh images every 5 seconds if they're not loaded
-  const imageRefreshInterval = setInterval(() => {
-    const allItems = [];
-    
-    // Collect all items from categorized recommendations
-    if (categorizedRecommendations.value && categorizedRecommendations.value.categories) {
-      categorizedRecommendations.value.categories.forEach((category: { name: string; items: any[] }) => {
-        if (category.items) {
-          allItems.push(...category.items);
-        }
-      });
-    }
-    
-    // Collect all items from flat recommendations
-    if (localRecommendations.value) {
-      allItems.push(...localRecommendations.value);
-    }
-    
-    // Check if any images are not loaded
-    const hasUnloadedImages = allItems.some(item => !item.imageLoaded);
-    
-    // If there are unloaded images, increment the counter to force re-render
-    if (hasUnloadedImages) {
-      imageRefreshCounter.value++;
-    } else {
-      // If all images are loaded, clear the interval
-      clearInterval(imageRefreshInterval);
-    }
-  }, 5000);
-  
-  // Clean up the interval when the component is unmounted
-  return () => {
-    clearInterval(imageRefreshInterval);
-  };
 });
 </script>

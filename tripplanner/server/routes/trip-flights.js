@@ -37,9 +37,7 @@ router.post('/', async (req, res) => {
       const lastSegment = itineraries[0].segments[itineraries[0].segments.length - 1];
 
       // Safely extract carrier information
-      const airline = dictionaries && dictionaries.carriers && firstSegment.carrierCode 
-        ? dictionaries.carriers[firstSegment.carrierCode] || 'Unknown Airline'
-        : 'Unknown Airline';
+      const airline = firstSegment.carrierCode || 'Unknown Airline';
       
       // Safely extract location information
       const fromCity = dictionaries && dictionaries.locations && firstSegment.departure && firstSegment.departure.iataCode
@@ -60,26 +58,58 @@ router.post('/', async (req, res) => {
         : 'Unknown';
       
       // Safely format departure and arrival times
-      let departureTime = '00:00:00';
-      let arrivalTime = '00:00:00';
-      let departureDate = new Date().toISOString().split('T')[0];
-      let arrivalDate = new Date().toISOString().split('T')[0];
-      
-      if (firstSegment.departure && firstSegment.departure.at) {
+      let departureTime = flight.departure_time || '00:00:00';
+      let arrivalTime = flight.arrival_time || '00:00:00';
+      let departureDate = flight.departure_date || new Date().toISOString().split('T')[0];
+      let arrivalDate = flight.arrival_date || new Date().toISOString().split('T')[0];
+
+      // Handle ISO datetime format in flight data (e.g., '2025-09-05T22:00:00')
+      if (departureTime && departureTime.includes('T')) {
+        const [datePart, timePart] = departureTime.split('T');
+        departureDate = datePart;
+        departureTime = timePart.split('.')[0]; // Remove milliseconds if present
+      }
+
+      if (arrivalTime && arrivalTime.includes('T')) {
+        const [datePart, timePart] = arrivalTime.split('T');
+        arrivalDate = datePart;
+        arrivalTime = timePart.split('.')[0]; // Remove milliseconds if present
+      }
+
+      // If not provided, extract from segments
+      if (!flight.departure_time && firstSegment.departure && firstSegment.departure.at) {
         try {
-          const departureDateTime = new Date(firstSegment.departure.at);
-          departureTime = departureDateTime.toTimeString().split(' ')[0]; // Extract HH:MM:SS
-          departureDate = departureDateTime.toISOString().split('T')[0]; // YYYY-MM-DD
+          const departureDateTimeStr = firstSegment.departure.at;
+          // Handle ISO format: 2025-09-05T22:00:00
+          if (departureDateTimeStr.includes('T')) {
+            const [datePart, timePart] = departureDateTimeStr.split('T');
+            departureDate = datePart;
+            departureTime = timePart.split('.')[0]; // Remove milliseconds if present
+          } else {
+            // Fallback for other formats
+            const departureDateTime = new Date(departureDateTimeStr);
+            departureTime = departureDateTime.toTimeString().split(' ')[0];
+            departureDate = departureDateTime.toISOString().split('T')[0];
+          }
         } catch (e) {
           console.error('Error parsing departure time:', e);
         }
       }
-      
-      if (lastSegment.arrival && lastSegment.arrival.at) {
+
+      if (!flight.arrival_time && lastSegment.arrival && lastSegment.arrival.at) {
         try {
-          const arrivalDateTime = new Date(lastSegment.arrival.at);
-          arrivalTime = arrivalDateTime.toTimeString().split(' ')[0]; // Extract HH:MM:SS
-          arrivalDate = arrivalDateTime.toISOString().split('T')[0]; // YYYY-MM-DD
+          const arrivalDateTimeStr = lastSegment.arrival.at;
+          // Handle ISO format: 2025-09-05T23:15:00
+          if (arrivalDateTimeStr.includes('T')) {
+            const [datePart, timePart] = arrivalDateTimeStr.split('T');
+            arrivalDate = datePart;
+            arrivalTime = timePart.split('.')[0]; // Remove milliseconds if present
+          } else {
+            // Fallback for other formats
+            const arrivalDateTime = new Date(arrivalDateTimeStr);
+            arrivalTime = arrivalDateTime.toTimeString().split(' ')[0];
+            arrivalDate = arrivalDateTime.toISOString().split('T')[0];
+          }
         } catch (e) {
           console.error('Error parsing arrival time:', e);
         }

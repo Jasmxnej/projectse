@@ -16,7 +16,7 @@
           <div
             v-for="(day, index) in weatherData"
             :key="index"
-            class="bg-white rounded-lg shadow-md p-4 text-center hover:shadow-lg transition-shadow"
+            class="bg-white rounded-lg shadow-md p-4 text-center transition-shadow"
           >
             <p class="font-semibold text-blue-800">{{ formatWeatherDate(day.date) }}</p>
             <div class="my-3 flex justify-center">
@@ -27,7 +27,7 @@
               />
             </div>
             <p class="text-2xl font-bold text-gray-800">{{ Math.round(day.temp) }}°C</p>
-            <p class="text-gray-700 capitalize font-medium">{{ day.description }}</p>
+            <p class="text-gray-700 capitalize font-medium" :class="{'text-orange-600': day.isPlaceholder}">{{ day.description }}</p>
             <div class="mt-3 grid grid-cols-2 gap-2 text-sm">
               <div class="bg-blue-50 p-2 rounded">
                 <p class="text-blue-800">Humidity</p>
@@ -48,7 +48,7 @@
           <div class="w-12 h-12 bg-gray-200 rounded-full"></div>
           <div class="w-12 h-12 bg-gray-200 rounded-full"></div>
         </div>
-        <button @click="fetchWeatherForecast" class="mt-6 px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors shadow-md">
+        <button @click="fetchWeatherForecast" class="mt-6 px-4 py-2 bg-teal-600 text-white rounded-lg transition-colors shadow-md">
           Refresh Weather
         </button>
       </div>
@@ -73,7 +73,11 @@ const props = defineProps({
     type: String,
     required: true
   },
-  tripId: {
+  startDate: {
+    type: String,
+    required: true
+  },
+  endDate: {
     type: String,
     required: true
   }
@@ -83,44 +87,57 @@ defineEmits(['add-to-packing']);
 
 const weatherData = ref<any[]>([]);
 const weatherApiKey = '491dbb279c20fd8140c2f9442a8d3e29'; // OpenWeather API key
-const tripData = ref<any>(null);
 
 // Format date for weather display
 const formatWeatherDate = (dateString: string) => {
   const date = new Date(dateString);
-  return date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+  const day = date.getDate();
+  const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const month = monthNames[date.getMonth()];
+  return `${day} ${month}`;
 };
 
 // Generate a weather summary based on the forecast data
 const getWeatherSummary = () => {
   if (!weatherData.value || weatherData.value.length === 0) return '';
-  
+
+  // Check if this is placeholder data
+  const hasPlaceholderData = weatherData.value.some(day => day.isPlaceholder);
+  const realDataDays = weatherData.value.filter(day => !day.isPlaceholder);
+
+  if (hasPlaceholderData && realDataDays.length === 0) {
+    return `Weather forecast for your trip dates is not yet available. The forecast will be updated closer to your travel dates.`;
+  }
+
+  // Use only real data for calculations
+  const dataToUse = realDataDays.length > 0 ? realDataDays : weatherData.value;
+
   // Calculate average temperature
-  const avgTemp = weatherData.value.reduce((sum, day) => sum + day.temp, 0) / weatherData.value.length;
-  
+  const avgTemp = dataToUse.reduce((sum, day) => sum + day.temp, 0) / dataToUse.length;
+
   // Check for rain
-  const rainDays = weatherData.value.filter(day =>
+  const rainDays = dataToUse.filter(day =>
     day.description.toLowerCase().includes('rain') ||
     day.description.toLowerCase().includes('shower')
   ).length;
-  
+
   // Check for high humidity
-  const highHumidityDays = weatherData.value.filter(day => day.humidity > 70).length;
-  
+  const highHumidityDays = dataToUse.filter(day => day.humidity > 70).length;
+
   // Generate summary
   let summary = `The average temperature will be around ${Math.round(avgTemp)}°C. `;
-  
+
   if (rainDays > 0) {
-    const rainPercentage = (rainDays / weatherData.value.length) * 100;
+    const rainPercentage = (rainDays / dataToUse.length) * 100;
     summary += `There's a ${Math.round(rainPercentage)}% chance of rain during your trip. `;
   } else {
     summary += `No rain is expected during your stay. `;
   }
-  
-  if (highHumidityDays > weatherData.value.length / 2) {
+
+  if (highHumidityDays > dataToUse.length / 2) {
     summary += `Humidity levels will be high, so dress accordingly. `;
   }
-  
+
   // Add temperature-based advice
   if (avgTemp > 30) {
     summary += `It will be quite hot, so stay hydrated and protect yourself from the sun.`;
@@ -131,25 +148,18 @@ const getWeatherSummary = () => {
   } else {
     summary += `It will be cool, so pack warm clothing layers.`;
   }
-  
+
+  if (hasPlaceholderData) {
+    summary += ` Some forecasts are not yet available and will be updated closer to your travel dates.`;
+  }
+
   return summary;
 };
 
-// Fetch trip details
-const fetchTripDetails = async () => {
-  if (!props.tripId) return;
-
-  try {
-    const response = await axios.get(`http://localhost:3002/api/trips/by-id/${props.tripId}`);
-    tripData.value = response.data;
-  } catch (error) {
-    console.error('Error fetching trip details:', error);
-  }
-};
 
 // Fetch weather forecast
 const fetchWeatherForecast = async () => {
-  if (!props.destination || !tripData.value) return;
+  if (!props.destination || !props.startDate || !props.endDate) return;
 
   try {
     // Get coordinates for the destination
@@ -158,38 +168,89 @@ const fetchWeatherForecast = async () => {
     if (geoResponse.data.length > 0) {
       const { lat, lon } = geoResponse.data[0];
 
-      // Use trip dates instead of current date
-      const startDate = new Date(tripData.value.start_date);
-      const endDate = new Date(tripData.value.end_date);
+      // Use trip dates from props - handle ISO format with timezone
+      let startDate, endDate;
 
-      // Get forecast for the trip period
+      try {
+        if (props.startDate.includes('T')) {
+          // Already in ISO format with time
+          startDate = new Date(props.startDate);
+        } else {
+          // Date only format
+          startDate = new Date(props.startDate + 'T00:00:00');
+        }
+
+        if (props.endDate.includes('T')) {
+          // Already in ISO format with time
+          endDate = new Date(props.endDate);
+        } else {
+          // Date only format
+          endDate = new Date(props.endDate + 'T23:59:59');
+        }
+      } catch (error) {
+        console.error('Error parsing trip dates:', error);
+        // Fallback to current date if parsing fails
+        startDate = new Date();
+        endDate = new Date();
+      }
+
+      console.log('Trip dates:', {
+        start: props.startDate,
+        end: props.endDate,
+        parsedStart: startDate,
+        parsedEnd: endDate
+      });
+
+      // Get forecast data
       const forecastResponse = await axios.get(
         `https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lon}&units=metric&appid=${weatherApiKey}`
       );
 
-      // Process forecast data for trip dates only
-      const processedData: any[] = [];
-      const uniqueDays = new Set();
+      // Always create trip date range first
+      const tripDays: any[] = [];
+      const currentDate = new Date(startDate);
 
+      while (currentDate <= endDate) {
+        const localDateStr = currentDate.getFullYear() + '-' +
+          (currentDate.getMonth() + 1).toString().padStart(2, '0') + '-' +
+          currentDate.getDate().toString().padStart(2, '0') + ' 12:00:00';
+        tripDays.push({
+          date: localDateStr,
+          temp: 25, // Default temperature
+          humidity: 60, // Default humidity
+          wind: 5, // Default wind speed
+          description: 'Forecast not available yet',
+          icon: '01d', // Default sunny icon
+          isPlaceholder: true
+        });
+        currentDate.setDate(currentDate.getDate() + 1);
+      }
+
+      // Try to match API data to trip dates
       forecastResponse.data.list.forEach((item: any) => {
         const itemDate = new Date(item.dt * 1000);
-        const dateString = itemDate.toDateString();
+        const itemDateOnly = new Date(itemDate.getFullYear(), itemDate.getMonth(), itemDate.getDate());
 
-        // Only include dates within the trip period
-        if (itemDate >= startDate && itemDate <= endDate && !uniqueDays.has(dateString)) {
-          uniqueDays.add(dateString);
-          processedData.push({
-            date: item.dt_txt,
-            temp: item.main.temp,
-            humidity: item.main.humidity,
-            wind: item.wind.speed,
-            description: item.weather[0].description,
-            icon: item.weather[0].icon
-          });
+        // Find matching trip day by comparing dates
+        const matchingTripDay = tripDays.find(day => {
+          const tripDate = new Date(day.date.split(' ')[0]); // Extract date part
+          const tripDateOnly = new Date(tripDate.getFullYear(), tripDate.getMonth(), tripDate.getDate());
+          return itemDateOnly.getTime() === tripDateOnly.getTime();
+        });
+
+        if (matchingTripDay) {
+          // Update with real API data
+          matchingTripDay.temp = item.main.temp;
+          matchingTripDay.humidity = item.main.humidity;
+          matchingTripDay.wind = item.wind.speed;
+          matchingTripDay.description = item.weather[0].description;
+          matchingTripDay.icon = item.weather[0].icon;
+          matchingTripDay.isPlaceholder = false;
         }
       });
 
-      weatherData.value = processedData;
+      console.log('Trip weather data created:', tripDays.length, 'days');
+      weatherData.value = tripDays;
     }
   } catch (error) {
     console.error('Error fetching weather:', error);
@@ -197,7 +258,6 @@ const fetchWeatherForecast = async () => {
 };
 
 onMounted(async () => {
-  await fetchTripDetails();
   fetchWeatherForecast();
 });
 </script>

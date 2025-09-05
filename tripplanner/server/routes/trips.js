@@ -29,10 +29,57 @@ router.get('/by-id/:tripId', async (req, res) => {
     const trip = trips[0];
     if (trip.activities) {
       try {
-        trip.activities = JSON.parse(trip.activities);
+        // Check if activities is already an array
+        if (Array.isArray(trip.activities)) {
+          // Already an array, no need to parse
+        }
+        // Check if activities is a string that looks like a comma-separated list
+        else if (typeof trip.activities === 'string' && trip.activities.includes(',') && !trip.activities.includes('{')) {
+          // Convert comma-separated string to array
+          trip.activities = trip.activities.split(',').map(item => item.trim());
+        }
+        // Check if it's a string that starts with a bracket (likely JSON array)
+        else if (typeof trip.activities === 'string' &&
+                (trip.activities.trim().startsWith('[') || trip.activities.trim().startsWith('{'))) {
+          // Try to parse as JSON
+          trip.activities = JSON.parse(trip.activities);
+        }
+        // Handle other string formats that might not be valid JSON
+        else if (typeof trip.activities === 'string') {
+          // Check if it's a single word or phrase (not JSON)
+          if (!trip.activities.includes('"') && !trip.activities.includes("'") &&
+              !trip.activities.includes(':') && !trip.activities.includes('{')) {
+            // Treat as a single item array
+            trip.activities = [trip.activities.trim()];
+          } else {
+            // Try to parse as JSON with extra safety
+            try {
+              trip.activities = JSON.parse(trip.activities);
+            } catch (innerError) {
+              console.error("Inner error parsing activities:", innerError);
+              // If all else fails, store as a single item array
+              trip.activities = [trip.activities];
+            }
+          }
+        }
       } catch (e) {
         console.error("Error parsing activities JSON:", e);
+        // If parsing fails, make a best effort to salvage the data
+        if (typeof trip.activities === 'string') {
+          // If it contains commas, treat as comma-separated list
+          if (trip.activities.includes(',')) {
+            trip.activities = trip.activities.split(',').map(item => item.trim());
+          } else {
+            // Otherwise treat as a single item
+            trip.activities = [trip.activities.trim()];
+          }
+        } else {
+          // Last resort, empty array
+          trip.activities = [];
+        }
       }
+    } else {
+      trip.activities = [];
     }
     res.status(200).send(trip);
   } catch (err) {
@@ -52,10 +99,57 @@ router.get('/latest/:userId', async (req, res) => {
       const trip = trips[0];
       if (trip.activities) {
         try {
-          trip.activities = JSON.parse(trip.activities);
+          // Check if activities is already an array
+          if (Array.isArray(trip.activities)) {
+            // Already an array, no need to parse
+          }
+          // Check if activities is a string that looks like a comma-separated list
+          else if (typeof trip.activities === 'string' && trip.activities.includes(',') && !trip.activities.includes('{')) {
+            // Convert comma-separated string to array
+            trip.activities = trip.activities.split(',').map(item => item.trim());
+          }
+          // Check if it's a string that starts with a bracket (likely JSON array)
+          else if (typeof trip.activities === 'string' &&
+                  (trip.activities.trim().startsWith('[') || trip.activities.trim().startsWith('{'))) {
+            // Try to parse as JSON
+            trip.activities = JSON.parse(trip.activities);
+          }
+          // Handle other string formats that might not be valid JSON
+          else if (typeof trip.activities === 'string') {
+            // Check if it's a single word or phrase (not JSON)
+            if (!trip.activities.includes('"') && !trip.activities.includes("'") &&
+                !trip.activities.includes(':') && !trip.activities.includes('{')) {
+              // Treat as a single item array
+              trip.activities = [trip.activities.trim()];
+            } else {
+              // Try to parse as JSON with extra safety
+              try {
+                trip.activities = JSON.parse(trip.activities);
+              } catch (innerError) {
+                console.error("Inner error parsing activities:", innerError);
+                // If all else fails, store as a single item array
+                trip.activities = [trip.activities];
+              }
+            }
+          }
         } catch (e) {
           console.error("Error parsing activities JSON:", e);
+          // If parsing fails, make a best effort to salvage the data
+          if (typeof trip.activities === 'string') {
+            // If it contains commas, treat as comma-separated list
+            if (trip.activities.includes(',')) {
+              trip.activities = trip.activities.split(',').map(item => item.trim());
+            } else {
+              // Otherwise treat as a single item
+              trip.activities = [trip.activities.trim()];
+            }
+          } else {
+            // Last resort, empty array
+            trip.activities = [];
+          }
         }
+      } else {
+        trip.activities = [];
       }
       res.status(200).send(trip);
     } catch (err) {
@@ -255,6 +349,8 @@ router.put('/:tripId/name', async (req, res) => {
     try {
       const pool = getPool();
       await pool.query("UPDATE trips SET name = ? WHERE id = ?", [name, tripId]);
+      // Also update saved_trips if it exists
+      await pool.query("UPDATE saved_trips SET name = ? WHERE trip_id = ?", [name, tripId]);
       res.status(200).send({ message: "Trip name updated successfully" });
     } catch (err) {
       console.error('Error updating trip name:', err);

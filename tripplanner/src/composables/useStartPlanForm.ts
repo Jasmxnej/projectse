@@ -123,34 +123,30 @@ export function useStartPlanForm() {
     citySuggestions.value = [];
   };
 
-  let debounceTimer: number;
   const handleCityInput = async () => {
-    clearTimeout(debounceTimer);
-    debounceTimer = setTimeout(async () => {
-      if (formData.destination.length < 1) {
-        citySuggestions.value = [];
-        return;
-      }
+    if (formData.destination.length < 1) {
+      citySuggestions.value = [];
+      return;
+    }
+    try {
+      const response = await axios.get('http://localhost:3002/api/amadeus/cities', {
+        params: { keyword: formData.destination }
+      });
+      citySuggestions.value = response.data;
+    } catch (error) {
+      console.error('Error fetching city suggestions, attempting to use Gemini:', error);
       try {
-        const response = await axios.get('http://localhost:3002/api/amadeus/cities', {
-          params: { keyword: formData.destination }
-        });
-        citySuggestions.value = response.data;
-      } catch (error) {
-        console.error('Error fetching city suggestions, attempting to use Gemini:', error);
-        try {
-          const prompt = `Provide a list of city names and their IATA codes starting with "${formData.destination}". Return the data in a JSON array format with "name" and "iataCode" properties. For example: [{"name": "Bangkok", "iataCode": "BKK"}]`;
-          await generateContent(prompt, import.meta.env.VITE_GEMINI_API_KEY);
-          if (Array.isArray(generatedContent.value)) {
-            citySuggestions.value = generatedContent.value;
-          } else if (generatedContent.value && Array.isArray(generatedContent.value.data)) {
-            citySuggestions.value = generatedContent.value.data;
-          }
-        } catch (geminiE) {
-          console.error('Error with Gemini fallback for cities:', geminiE);
+        const prompt = `Provide a list of city names and their IATA codes starting with "${formData.destination}". Return the data in a JSON array format with "name" and "iataCode" properties. For example: [{"name": "Bangkok", "iataCode": "BKK"}]`;
+        await generateContent(prompt, import.meta.env.VITE_GEMINI_API_KEY);
+        if (Array.isArray(generatedContent.value)) {
+          citySuggestions.value = generatedContent.value;
+        } else if (generatedContent.value && Array.isArray(generatedContent.value.data)) {
+          citySuggestions.value = generatedContent.value.data;
         }
+      } catch (geminiE) {
+        console.error('Error with Gemini fallback for cities:', geminiE);
       }
-    }, 1200);
+    }
   };
 
   const fetchSavedPlans = async () => {

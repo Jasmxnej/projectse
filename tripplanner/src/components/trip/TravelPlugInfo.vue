@@ -25,12 +25,7 @@
         </div>
       </div>
       <div class="flex justify-between items-center">
-        <button 
-          @click="addToPackingList('Travel Power Adapter')" 
-          class="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors"
-        >
-          Add Adapter to Packing List
-        </button>
+      
       </div>
     </div>
     <div v-else class="text-center py-4 text-gray-500">

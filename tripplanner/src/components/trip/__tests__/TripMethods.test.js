@@ -321,7 +321,7 @@ describe('Trip Methods Tests', () => {
       const wrapper = mount(TripWeatherForecast, {
         props: {
           destination: 'Bangkok',
-          tripId: '1'
+          tripId: '123'
         }
       });
 
@@ -467,7 +467,7 @@ describe('Trip Methods Tests', () => {
 
       const wrapper = mount(TripPackingList, {
         props: {
-          tripId: '1',
+          tripId: '123',
           destination: 'Bangkok'
         }
       });
