@@ -64,6 +64,9 @@ describe('Trip Methods Tests', () => {
       // Wait for the async generateBudgetAnalysis to complete
       await new Promise(resolve => setTimeout(resolve, 100));
 
+      // Check that console.error was called with the exact message from the code
+      expect(console.error).toHaveBeenCalledWith('Error generating budget analysis:', expect.any(Error));
+
       // Component should still work
       expect(wrapper.exists()).toBe(true);
       // Check if fallback message was set
@@ -133,6 +136,9 @@ describe('Trip Methods Tests', () => {
       // Wait for tips to generate and error handling to complete
       await wrapper.vm.$nextTick();
       await new Promise(resolve => setTimeout(resolve, 100));
+
+      // Check that console.error was called with the exact message from the code
+      expect(console.error).toHaveBeenCalledWith('Error getting destination-specific packing tips:', expect.any(Error));
 
       // The function should still process weather data and not crash
       expect(wrapper.vm.packingTips).toBeDefined();
@@ -283,6 +289,9 @@ describe('Trip Methods Tests', () => {
       // Call fetch method
       await wrapper.vm.fetchWeatherForecast();
 
+      // Check that console.error was called with the exact message from the code
+      expect(console.error).toHaveBeenCalledWith('Error fetching weather:', expect.any(Error));
+
       // Component should still work
       expect(wrapper.exists()).toBe(true);
 
@@ -344,6 +353,9 @@ describe('Trip Methods Tests', () => {
 
       // Wait for any async operations
       await new Promise(resolve => setTimeout(resolve, 100));
+
+      // Check that console.error was called with the exact message from the code
+      expect(console.error).toHaveBeenCalledWith('Error fetching local recommendations:', expect.any(Error));
 
       // Check if fallback recommendations were generated
       expect(wrapper.vm.categorizedRecommendations.categories.length).toBeGreaterThan(0);
@@ -551,6 +563,9 @@ describe('Trip Methods Tests', () => {
 
       // Call save method
       await wrapper.vm.savePackingList();
+
+      // Check that console.error was called with the exact message from the code
+      expect(console.error).toHaveBeenCalledWith('Error saving packing list to API:', expect.any(Error));
 
       // Component should still work
       expect(wrapper.exists()).toBe(true);
