@@ -303,6 +303,22 @@ describe('Trip Methods Tests', () => {
   // Test addToPackingList method
   describe('addToPackingList', () => {
     test('should add item to packing list', async () => {
+      // Mock axios to return empty data (no existing packing list)
+      axios.get.mockRejectedValue(new Error('API Error'));
+      axios.post.mockResolvedValue({ data: {} });
+
+      // Mock localStorage to return null (no saved data)
+      const localStorageMock = {
+        getItem: jest.fn().mockReturnValue(null),
+        setItem: jest.fn(),
+        removeItem: jest.fn(),
+        clear: jest.fn(),
+      };
+      Object.defineProperty(window, 'localStorage', {
+        value: localStorageMock,
+        writable: true,
+      });
+
       const wrapper = mount(TripPackingList, {
         props: {
           tripId: '123',
@@ -310,12 +326,14 @@ describe('Trip Methods Tests', () => {
         }
       });
 
-      // Set data
-      wrapper.vm.categorizedPackingList = {
-        categories: [
-          { name: 'Essentials', items: [] }
-        ]
-      };
+      // Wait for component to initialize and load empty data
+      await new Promise(resolve => setTimeout(resolve, 10));
+
+      // Override the loadPackingList method to prevent default data loading
+      wrapper.vm.loadPackingList = jest.fn().mockResolvedValue();
+
+      // Manually set empty categories to ensure clean state
+      wrapper.vm.categorizedPackingList = { categories: [] };
 
       // Add item
       wrapper.vm.newPackingItem = 'Passport';
@@ -325,14 +343,35 @@ describe('Trip Methods Tests', () => {
       await wrapper.vm.addPackingItem();
 
       // Check if item was added
+      expect(wrapper.vm.categorizedPackingList.categories.length).toBe(1);
+      expect(wrapper.vm.categorizedPackingList.categories[0].name).toBe('Essentials');
       expect(wrapper.vm.categorizedPackingList.categories[0].items.length).toBe(1);
       expect(wrapper.vm.categorizedPackingList.categories[0].items[0].name).toBe('Passport');
+
+      // Clean up
+      wrapper.unmount();
     });
   });
 
   // Test removePackingItem method
   describe('removePackingItem', () => {
     test('should remove item from packing list', async () => {
+      // Mock axios to return empty data (no existing packing list)
+      axios.get.mockRejectedValue(new Error('API Error'));
+      axios.post.mockResolvedValue({ data: {} });
+
+      // Mock localStorage to return null (no saved data)
+      const localStorageMock = {
+        getItem: jest.fn().mockReturnValue(null),
+        setItem: jest.fn(),
+        removeItem: jest.fn(),
+        clear: jest.fn(),
+      };
+      Object.defineProperty(window, 'localStorage', {
+        value: localStorageMock,
+        writable: true,
+      });
+
       const wrapper = mount(TripPackingList, {
         props: {
           tripId: '123',
@@ -340,23 +379,33 @@ describe('Trip Methods Tests', () => {
         }
       });
 
-      // Set data with item
+      // Wait for component to initialize
+      await new Promise(resolve => setTimeout(resolve, 10));
+
+      // Manually set up test data
       wrapper.vm.categorizedPackingList = {
         categories: [
           {
             name: 'Essentials',
             items: [
-              { name: 'Passport', quantity: 1, packed: false }
+              { name: 'Test Item', quantity: 1, packed: false }
             ]
           }
         ]
       };
 
-      // Remove item
+      // Get count before removal
+      const countBeforeRemove = wrapper.vm.categorizedPackingList.categories[0].items.length;
+
+      // Remove the item (should be at index 0)
       await wrapper.vm.removePackingItem(0, 0);
 
       // Check if item was removed
-      expect(wrapper.vm.categorizedPackingList.categories[0].items.length).toBe(0);
+      const countAfterRemove = wrapper.vm.categorizedPackingList.categories[0].items.length;
+      expect(countAfterRemove).toBe(countBeforeRemove - 1);
+
+      // Clean up
+      wrapper.unmount();
     });
   });
 
