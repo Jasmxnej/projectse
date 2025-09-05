@@ -13,12 +13,16 @@ jest.mock('axios', () => ({
 
 const axios = require('axios');
 
+// Mock console methods to suppress error logging in tests
+jest.spyOn(console, 'error').mockImplementation(() => {});
+jest.spyOn(console, 'warn').mockImplementation(() => {});
+
 
 describe('Trip Methods Tests', () => {
 
   // Test generateBudgetAnalysis method
   describe('generateBudgetAnalysis', () => {
-    test('should generate budget analysis with good budget', async () => {
+    test('testGenerateBudgetAnalysisGoodBudget', async () => {
       // Mock successful API response
       axios.post.mockResolvedValue({
         data: { text: 'Your budget looks good!' }
@@ -32,36 +36,44 @@ describe('Trip Methods Tests', () => {
         }
       });
 
-      // Wait for component to mount
+      // Wait for component to mount and method to complete
       await wrapper.vm.$nextTick();
+      // Wait for the async generateBudgetAnalysis to complete
+      await new Promise(resolve => setTimeout(resolve, 100));
 
       // Check if axios was called with correct data
       expect(axios.post).toHaveBeenCalledWith('http://localhost:3002/api/gemini/generate', expect.any(Object));
+      // Check if budget analysis was set
+      expect(wrapper.vm.budgetAnalysis).toBe('Your budget looks good!');
     });
 
-    test('should handle API error and show fallback message', async () => {
+    test('testGenerateBudgetAnalysisApiError', async () => {
       // Mock API error
       axios.post.mockRejectedValue(new Error('API Error'));
 
       const wrapper = mount(TripBudgetAnalysis, {
         props: {
-          totalBudget: 5000,
-          plannedExpenses: { total: 6000, flight: 2000, hotel: 2000, plan: 2000 },
+          totalBudget: 10000,
+          plannedExpenses: { total: 5000, flight: 2000, hotel: 2000, plan: 1000 },
           destination: 'Bangkok'
         }
       });
 
       // Wait for error handling
       await wrapper.vm.$nextTick();
+      // Wait for the async generateBudgetAnalysis to complete
+      await new Promise(resolve => setTimeout(resolve, 100));
 
       // Component should still work
       expect(wrapper.exists()).toBe(true);
+      // Check if fallback message was set
+      expect(wrapper.vm.budgetAnalysis).toContain('Your budget looks good!');
     });
   });
 
   // Test generatePackingTips method
   describe('generatePackingTips', () => {
-    test('should generate packing tips for hot weather', async () => {
+    test('testGeneratePackingTipsHotWeather', async () => {
       const weatherData = [
         { temp: 35, description: 'clear sky', humidity: 60 },
         { temp: 32, description: 'sunny', humidity: 65 }
@@ -81,7 +93,7 @@ describe('Trip Methods Tests', () => {
       expect(wrapper.vm.packingTips.length).toBeGreaterThan(0);
     });
 
-    test('should generate packing tips for rainy weather', async () => {
+    test('testGeneratePackingTipsRainyWeather', async () => {
       const weatherData = [
         { temp: 25, description: 'light rain', humidity: 80 },
         { temp: 22, description: 'moderate rain', humidity: 85 }
@@ -105,7 +117,7 @@ describe('Trip Methods Tests', () => {
 
   // Test getWeatherSummary method
   describe('getWeatherSummary', () => {
-    test('should create weather summary for hot weather', () => {
+    test('testGetWeatherSummaryHotWeather', () => {
       const weatherData = [
         { temp: 35, description: 'clear sky', humidity: 60, wind: 5 },
         { temp: 32, description: 'sunny', humidity: 65, wind: 6 }
@@ -128,7 +140,7 @@ describe('Trip Methods Tests', () => {
       expect(summary).toContain('sun');
     });
 
-    test('should create weather summary for rainy weather', () => {
+    test('testGetWeatherSummaryRainyWeather', () => {
       const weatherData = [
         { temp: 25, description: 'light rain', humidity: 80, wind: 10 },
         { temp: 22, description: 'moderate rain', humidity: 85, wind: 12 }
@@ -153,7 +165,7 @@ describe('Trip Methods Tests', () => {
 
   // Test fetchWeatherForecast method
   describe('fetchWeatherForecast', () => {
-    test('should fetch weather forecast successfully', async () => {
+    test('testFetchWeatherForecastSuccess', async () => {
       // Mock geocoding API
       axios.get.mockImplementation((url) => {
         if (url.includes('geo')) {
@@ -193,7 +205,7 @@ describe('Trip Methods Tests', () => {
       wrapper.unmount();
     });
 
-    test('should handle API error gracefully', async () => {
+    test('testFetchWeatherForecastApiError', async () => {
       // Mock API error
       axios.get.mockRejectedValue(new Error('API Error'));
 
@@ -216,7 +228,7 @@ describe('Trip Methods Tests', () => {
 
   // Test fetchLocalRecommendations method
   describe('fetchLocalRecommendations', () => {
-    test('should fetch local recommendations successfully', async () => {
+    test('testFetchLocalRecommendationsSuccess', async () => {
       // Mock all axios calls
       axios.post.mockResolvedValue({
         data: {
@@ -251,7 +263,7 @@ describe('Trip Methods Tests', () => {
       wrapper.unmount();
     });
 
-    test('should handle API error and generate fallback', async () => {
+    test('testFetchLocalRecommendationsApiError', async () => {
       // Mock API error
       axios.post.mockRejectedValue(new Error('API Error'));
       axios.get.mockResolvedValue({ data: { image: 'test-image.jpg' } });
@@ -278,7 +290,7 @@ describe('Trip Methods Tests', () => {
 
   // Test generateFallbackRecommendations method
   describe('generateFallbackRecommendations', () => {
-    test('should generate fallback recommendations', () => {
+    test('testGenerateFallbackRecommendations', () => {
       // Mock axios for image loading
       axios.get.mockResolvedValue({ data: { image: 'test-image.jpg' } });
 
@@ -302,7 +314,7 @@ describe('Trip Methods Tests', () => {
 
   // Test addToPackingList method
   describe('addToPackingList', () => {
-    test('should add item to packing list', async () => {
+    test('testAddToPackingList', async () => {
       // Mock axios to return empty data (no existing packing list)
       axios.get.mockRejectedValue(new Error('API Error'));
       axios.post.mockResolvedValue({ data: {} });
@@ -332,8 +344,12 @@ describe('Trip Methods Tests', () => {
       // Override the loadPackingList method to prevent default data loading
       wrapper.vm.loadPackingList = jest.fn().mockResolvedValue();
 
-      // Manually set empty categories to ensure clean state
-      wrapper.vm.categorizedPackingList = { categories: [] };
+      // Manually set initial categories to enable categorized mode
+      wrapper.vm.categorizedPackingList = {
+        categories: [
+          { name: 'Essentials', items: [] }
+        ]
+      };
 
       // Add item
       wrapper.vm.newPackingItem = 'Passport';
@@ -355,7 +371,7 @@ describe('Trip Methods Tests', () => {
 
   // Test removePackingItem method
   describe('removePackingItem', () => {
-    test('should remove item from packing list', async () => {
+    test('testRemovePackingItem', async () => {
       // Mock axios to return empty data (no existing packing list)
       axios.get.mockRejectedValue(new Error('API Error'));
       axios.post.mockResolvedValue({ data: {} });
@@ -411,7 +427,7 @@ describe('Trip Methods Tests', () => {
 
   // Test savePackingList method
   describe('savePackingList', () => {
-    test('should save packing list to API', async () => {
+    test('testSavePackingListApi', async () => {
       // Mock API success
       axios.post.mockResolvedValue({ data: {} });
 
@@ -444,7 +460,7 @@ describe('Trip Methods Tests', () => {
       );
     });
 
-    test('should handle API error and save locally', async () => {
+    test('testSavePackingListApiError', async () => {
       // Mock API error
       axios.post.mockRejectedValue(new Error('API Error'));
 
@@ -465,7 +481,7 @@ describe('Trip Methods Tests', () => {
 
   // Test addPackingItemFromSuggestion method
   describe('addPackingItemFromSuggestion', () => {
-    test('should add item from suggestion', () => {
+    test('testAddPackingItemFromSuggestion', () => {
       const wrapper = mount(TripPackingList, {
         props: {
           tripId: '123',
@@ -488,7 +504,7 @@ describe('Trip Methods Tests', () => {
       expect(wrapper.vm.categorizedPackingList.categories[0].items[0].name).toBe('Phone Charger');
     });
 
-    test('should increment quantity if item already exists', () => {
+    test('testAddPackingItemFromSuggestionIncrement', () => {
       const wrapper = mount(TripPackingList, {
         props: {
           tripId: '123',

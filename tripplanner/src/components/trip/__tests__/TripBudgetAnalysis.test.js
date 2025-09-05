@@ -8,10 +8,14 @@ jest.mock('axios', () => ({
 
 const axios = require('axios');
 
-// Simple test for generateBudgetAnalysis method
+// Mock console methods to suppress error logging in tests
+jest.spyOn(console, 'error').mockImplementation(() => {});
+jest.spyOn(console, 'warn').mockImplementation(() => {});
+
+
 describe('TripBudgetAnalysis Component', () => {
   // Test case 1: Check if component can be created
-  test('should mount created correctly', () => {
+  test('testTripBudgetAnalysisMount', () => {
     const wrapper = mount(TripBudgetAnalysis, {
       props: {
         totalBudget: 10000,
@@ -23,7 +27,7 @@ describe('TripBudgetAnalysis Component', () => {
   });
 
   // Test case 2: Check if budget analysis is generated
-  test('should generate budget analysis on mount', async () => {
+  test('testGenerateBudgetAnalysisSuccess', async () => {
     // Mock successful API response
     axios.post.mockResolvedValue({
       data: { text: 'Your budget looks good for Bangkok trip!' }
@@ -39,13 +43,17 @@ describe('TripBudgetAnalysis Component', () => {
 
     // Wait for component to mount and API call to complete
     await wrapper.vm.$nextTick();
+    // Wait for the async generateBudgetAnalysis to complete
+    await new Promise(resolve => setTimeout(resolve, 100));
 
     // Check if axios was called
     expect(axios.post).toHaveBeenCalled();
+    // Check if budget analysis was set
+    expect(wrapper.vm.budgetAnalysis).toBe('Your budget looks good for Bangkok trip!');
   });
 
   // Test case 3: Check error handling when API fails
-  test('should handle API errors and show fallback message', async () => {
+  test('testGenerateBudgetAnalysisApiError', async () => {
     // Mock API error
     axios.post.mockRejectedValue(new Error('API Error'));
 
@@ -59,13 +67,17 @@ describe('TripBudgetAnalysis Component', () => {
 
     // Wait for error handling
     await wrapper.vm.$nextTick();
+    // Wait for the async generateBudgetAnalysis to complete
+    await new Promise(resolve => setTimeout(resolve, 100));
 
     // Component should still work even with API error
     expect(wrapper.exists()).toBe(true);
+    // Check if fallback message was set for over budget
+    expect(wrapper.vm.budgetAnalysis).toContain('over budget');
   });
 
   // Test case 4: Check remaining budget calculation
-  test('should calculate remaining budget correctly', () => {
+  test('testCalculateRemainingBudget', () => {
     const wrapper = mount(TripBudgetAnalysis, {
       props: {
         totalBudget: 10000,

@@ -1,5 +1,6 @@
 module.exports = {
   testEnvironment: 'jsdom',
+  verbose: true,
   transform: {
     '^.+\\.vue$': '@vue/vue3-jest',
     '^.+\\.(js|jsx|ts|tsx)$': 'babel-jest',
