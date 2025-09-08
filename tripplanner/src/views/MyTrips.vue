@@ -1,19 +1,19 @@
 <template>
   <Navbar />
-  <div class=" min-h-screen pt-24 pb-20 px-6 ">
+  <div class=" min-h-screen pt-24 pb-20 px-6 bg-background ">
     <div class="max-w-7xl mx-auto px-6 pt-10 pb-24 space-y-14">
       <!-- Page Heading -->
       <div class="ml-2">
-        <h1 class="text-5xl font-bold text-[#17637B] \">My Trips</h1>
-        <p class="text-[#17637B]  text-lg mt-2">View and manage all your planned adventures</p>
+        <h1 class="text-5xl font-bold text-accent2 \">My Trips</h1>
+        <p class="text-accent2 text-lg mt-2">View and manage all your planned adventures</p>
       </div>
 
       <!-- Empty State -->
       <div
         v-if="trips.length === 0"
-        class="flex flex-col items-center justify-center h-80 border rounded-3xl bg-white/70 shadow-inner backdrop-blur-md text-center"
+        class="flex flex-col items-center justify-center h-80 border rounded-3xl bg-background shadow-inner backdrop-blur-md text-center"
       >
-        <h2 class="text-2xl font-bold text-[#17637B] mb-2">No Trips Yet</h2>
+        <h2 class="text-2xl font-bold text-accent2 mb-2">No Trips Yet</h2>
         <p class="text-base text-gray-500 mb-4">Start planning your first adventure to see it here</p>
         <button
           @click="createTrip"
@@ -26,7 +26,7 @@
       <!-- Trip Cards -->
       <div v-else class="bg-white/80 shadow-xl backdrop-blur-md rounded-3xl p-10 space-y-14">
         <div class="flex items-center justify-between">
-          <h2 class="text-3xl font-semibold text-[#17637B] ">Planned Trips</h2>
+          <h2 class="text-3xl font-semibold text-accent2 ">Planned Trips</h2>
           <button
             @click="createTrip"
             class="bg-red hover:brighteness-110 text-white px-6 py-2 rounded-full font-semibold shadow hover:brightness-110 transition"
