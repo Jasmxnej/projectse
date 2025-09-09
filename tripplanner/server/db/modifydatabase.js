@@ -1,63 +1,56 @@
-/**
- * Database modification functions
- * This file contains all the functions to modify the database schema
- * Consolidates all the SQL files into a single JavaScript file
- */
 
-/**
- * Apply all database modifications
- * @param {Object} connection - MySQL connection object
- */
 async function applyDatabaseModifications(connection) {
   try {
-    // Apply packing list categories schema update
+
     await applyPackingListCategoriesUpdate(connection);
     
-    // Fix user_id column type in trips table
+
     await fixUserIdColumnType(connection);
     
-    // Add packing_list column to trips table
+
     await addPackingListColumn(connection);
     
-    // Remove hotel_id column from hotels table if it exists
+
     await removeHotelIdColumn(connection);
     
-    // Remove day_id column from daily_schedules table if it exists
+   
     await removeDayIdColumn(connection);
     
-    // Add currency column to hotels table
+
     await addCurrencyColumn(connection);
     
-    // Fix trip_id column type in related tables
+
     await fixTripIdColumnType(connection);
-    
-    // Add missing columns to daily_schedules table
+   
     await addDailySchedulesColumns(connection);
     
-    // Add missing columns to flights table
+
     await addFlightColumns(connection);
     
-    // Add from_iata and to_iata columns to flights table
+
     await addIataColumns(connection);
     
-    // Add missing columns to hotels table
+
     await addHotelColumns(connection);
     
-    // Create trip_packing_lists table if it doesn't exist
+  
     await createTripPackingListsTable(connection);
     
-    // Create weather and local_recommendations tables if they don't exist
+   
     await createWeatherTable(connection);
     await createLocalRecommendationsTable(connection);
     
-    // Update flights table to match new schema
+
     await updateFlightsTableSchema(connection);
     
-    // Update hotels table to match new schema
+
     await updateHotelsTableSchema(connection);
-    
-    // Ensure saved_trips table has updated_at column
+ 
     await ensureSavedTripsUpdatedAtColumn(connection);
+    
+
+    await addUniqueKeyToSavedTrips(connection);
+    await increaseImageUrlLength(connection);
     
     console.log('All database modifications applied successfully.');
   } catch (error) {
@@ -66,13 +59,10 @@ async function applyDatabaseModifications(connection) {
   }
 }
 
-/**
- * Apply packing list categories schema update
- * @param {Object} connection - MySQL connection object
- */
+
 async function applyPackingListCategoriesUpdate(connection) {
   try {
-    // Update the packing_list column in trips table to use JSON format
+
     const [packingListResult] = await connection.query(`
       SELECT COUNT(*) AS count FROM INFORMATION_SCHEMA.COLUMNS
       WHERE TABLE_NAME = 'trips' AND COLUMN_NAME = 'packing_list'
@@ -84,7 +74,7 @@ async function applyPackingListCategoriesUpdate(connection) {
       `);
     }
     
-    // Update the items column in trip_packing_lists table to use JSON format
+
     const [itemsResult] = await connection.query(`
       SELECT COUNT(*) AS count FROM INFORMATION_SCHEMA.COLUMNS
       WHERE TABLE_NAME = 'trip_packing_lists' AND COLUMN_NAME = 'items'
@@ -96,7 +86,7 @@ async function applyPackingListCategoriesUpdate(connection) {
       `);
     }
     
-    // Add country_info column to trips table for storing country-specific information
+
     const [countryInfoResult] = await connection.query(`
       SELECT COUNT(*) AS count FROM INFORMATION_SCHEMA.COLUMNS
       WHERE TABLE_NAME = 'trips' AND COLUMN_NAME = 'country_info'
@@ -115,10 +105,7 @@ async function applyPackingListCategoriesUpdate(connection) {
   }
 }
 
-/**
- * Fix user_id column type in trips table
- * @param {Object} connection - MySQL connection object
- */
+
 async function fixUserIdColumnType(connection) {
   try {
     const [result] = await connection.query(`
@@ -139,10 +126,7 @@ async function fixUserIdColumnType(connection) {
   }
 }
 
-/**
- * Add packing_list column to trips table
- * @param {Object} connection - MySQL connection object
- */
+
 async function addPackingListColumn(connection) {
   try {
     const [result] = await connection.query(`
@@ -163,10 +147,6 @@ async function addPackingListColumn(connection) {
   }
 }
 
-/**
- * Remove hotel_id column from hotels table if it exists
- * @param {Object} connection - MySQL connection object
- */
 async function removeHotelIdColumn(connection) {
   try {
     const [result] = await connection.query(`
@@ -187,10 +167,7 @@ async function removeHotelIdColumn(connection) {
   }
 }
 
-/**
- * Remove day_id column from daily_schedules table if it exists
- * @param {Object} connection - MySQL connection object
- */
+
 async function removeDayIdColumn(connection) {
   try {
     const [result] = await connection.query(`
@@ -211,10 +188,7 @@ async function removeDayIdColumn(connection) {
   }
 }
 
-/**
- * Add currency column to hotels table
- * @param {Object} connection - MySQL connection object
- */
+
 async function addCurrencyColumn(connection) {
   try {
     const [result] = await connection.query(`
@@ -235,13 +209,9 @@ async function addCurrencyColumn(connection) {
   }
 }
 
-/**
- * Fix trip_id column type in related tables
- * @param {Object} connection - MySQL connection object
- */
 async function fixTripIdColumnType(connection) {
   try {
-    // Flights table
+
     const [flightsResult] = await connection.query(`
       SELECT COUNT(*) AS count FROM INFORMATION_SCHEMA.COLUMNS
       WHERE TABLE_NAME = 'flights' AND COLUMN_NAME = 'trip_id'
@@ -253,7 +223,7 @@ async function fixTripIdColumnType(connection) {
       `);
     }
     
-    // Hotels table
+
     const [hotelsResult] = await connection.query(`
       SELECT COUNT(*) AS count FROM INFORMATION_SCHEMA.COLUMNS
       WHERE TABLE_NAME = 'hotels' AND COLUMN_NAME = 'trip_id'
@@ -265,7 +235,7 @@ async function fixTripIdColumnType(connection) {
       `);
     }
     
-    // Daily schedules table
+
     const [schedulesResult] = await connection.query(`
       SELECT COUNT(*) AS count FROM INFORMATION_SCHEMA.COLUMNS
       WHERE TABLE_NAME = 'daily_schedules' AND COLUMN_NAME = 'trip_id'
@@ -277,7 +247,7 @@ async function fixTripIdColumnType(connection) {
       `);
     }
     
-    // Budgets table
+ 
     const [budgetsResult] = await connection.query(`
       SELECT COUNT(*) AS count FROM INFORMATION_SCHEMA.COLUMNS
       WHERE TABLE_NAME = 'budgets' AND COLUMN_NAME = 'trip_id'
@@ -296,13 +266,9 @@ async function fixTripIdColumnType(connection) {
   }
 }
 
-/**
- * Add missing columns to daily_schedules table
- * @param {Object} connection - MySQL connection object
- */
 async function addDailySchedulesColumns(connection) {
   try {
-    // day_name column
+
     const [dayNameResult] = await connection.query(`
       SELECT COUNT(*) AS count FROM INFORMATION_SCHEMA.COLUMNS
       WHERE TABLE_NAME = 'daily_schedules' AND COLUMN_NAME = 'day_name'
@@ -314,7 +280,7 @@ async function addDailySchedulesColumns(connection) {
       `);
     }
     
-    // activity_count column
+
     const [activityCountResult] = await connection.query(`
       SELECT COUNT(*) AS count FROM INFORMATION_SCHEMA.COLUMNS
       WHERE TABLE_NAME = 'daily_schedules' AND COLUMN_NAME = 'activity_count'
@@ -326,7 +292,7 @@ async function addDailySchedulesColumns(connection) {
       `);
     }
     
-    // day_cost column
+
     const [dayCostResult] = await connection.query(`
       SELECT COUNT(*) AS count FROM INFORMATION_SCHEMA.COLUMNS
       WHERE TABLE_NAME = 'daily_schedules' AND COLUMN_NAME = 'day_cost'
@@ -338,7 +304,7 @@ async function addDailySchedulesColumns(connection) {
       `);
     }
     
-    // full_day_data column
+
     const [fullDayDataResult] = await connection.query(`
       SELECT COUNT(*) AS count FROM INFORMATION_SCHEMA.COLUMNS
       WHERE TABLE_NAME = 'daily_schedules' AND COLUMN_NAME = 'full_day_data'
@@ -357,13 +323,9 @@ async function addDailySchedulesColumns(connection) {
   }
 }
 
-/**
- * Add missing columns to flights table
- * @param {Object} connection - MySQL connection object
- */
 async function addFlightColumns(connection) {
   try {
-    // itinerary_details column
+
     const [itineraryDetailsResult] = await connection.query(`
       SELECT COUNT(*) AS count FROM INFORMATION_SCHEMA.COLUMNS
       WHERE TABLE_NAME = 'flights' AND COLUMN_NAME = 'itinerary_details'
@@ -375,7 +337,7 @@ async function addFlightColumns(connection) {
       `);
     }
     
-    // from_city column
+
     const [fromCityResult] = await connection.query(`
       SELECT COUNT(*) AS count FROM INFORMATION_SCHEMA.COLUMNS
       WHERE TABLE_NAME = 'flights' AND COLUMN_NAME = 'from_city'
@@ -387,7 +349,7 @@ async function addFlightColumns(connection) {
       `);
     }
     
-    // to_city column
+
     const [toCityResult] = await connection.query(`
       SELECT COUNT(*) AS count FROM INFORMATION_SCHEMA.COLUMNS
       WHERE TABLE_NAME = 'flights' AND COLUMN_NAME = 'to_city'
@@ -399,7 +361,7 @@ async function addFlightColumns(connection) {
       `);
     }
     
-    // stops column
+   
     const [stopsResult] = await connection.query(`
       SELECT COUNT(*) AS count FROM INFORMATION_SCHEMA.COLUMNS
       WHERE TABLE_NAME = 'flights' AND COLUMN_NAME = 'stops'
@@ -411,7 +373,7 @@ async function addFlightColumns(connection) {
       `);
     }
     
-    // segment_details column
+
     const [segmentDetailsResult] = await connection.query(`
       SELECT COUNT(*) AS count FROM INFORMATION_SCHEMA.COLUMNS
       WHERE TABLE_NAME = 'flights' AND COLUMN_NAME = 'segment_details'
@@ -423,7 +385,7 @@ async function addFlightColumns(connection) {
       `);
     }
     
-    // traveler_details column
+
     const [travelerDetailsResult] = await connection.query(`
       SELECT COUNT(*) AS count FROM INFORMATION_SCHEMA.COLUMNS
       WHERE TABLE_NAME = 'flights' AND COLUMN_NAME = 'traveler_details'
@@ -435,7 +397,7 @@ async function addFlightColumns(connection) {
       `);
     }
     
-    // dictionary_details column
+
     const [dictionaryDetailsResult] = await connection.query(`
       SELECT COUNT(*) AS count FROM INFORMATION_SCHEMA.COLUMNS
       WHERE TABLE_NAME = 'flights' AND COLUMN_NAME = 'dictionary_details'
@@ -447,7 +409,7 @@ async function addFlightColumns(connection) {
       `);
     }
     
-    // traveler_type column
+
     const [travelerTypeResult] = await connection.query(`
       SELECT COUNT(*) AS count FROM INFORMATION_SCHEMA.COLUMNS
       WHERE TABLE_NAME = 'flights' AND COLUMN_NAME = 'traveler_type'
@@ -459,7 +421,7 @@ async function addFlightColumns(connection) {
       `);
     }
     
-    // fare_class column
+
     const [fareClassResult] = await connection.query(`
       SELECT COUNT(*) AS count FROM INFORMATION_SCHEMA.COLUMNS
       WHERE TABLE_NAME = 'flights' AND COLUMN_NAME = 'fare_class'
@@ -471,7 +433,7 @@ async function addFlightColumns(connection) {
       `);
     }
     
-    // baggage_quantity column
+
     const [baggageQuantityResult] = await connection.query(`
       SELECT COUNT(*) AS count FROM INFORMATION_SCHEMA.COLUMNS
       WHERE TABLE_NAME = 'flights' AND COLUMN_NAME = 'baggage_quantity'
@@ -483,7 +445,7 @@ async function addFlightColumns(connection) {
       `);
     }
     
-    // aircraft_code column
+
     const [aircraftCodeResult] = await connection.query(`
       SELECT COUNT(*) AS count FROM INFORMATION_SCHEMA.COLUMNS
       WHERE TABLE_NAME = 'flights' AND COLUMN_NAME = 'aircraft_code'
@@ -495,7 +457,7 @@ async function addFlightColumns(connection) {
       `);
     }
     
-    // fare_option column
+
     const [fareOptionResult] = await connection.query(`
       SELECT COUNT(*) AS count FROM INFORMATION_SCHEMA.COLUMNS
       WHERE TABLE_NAME = 'flights' AND COLUMN_NAME = 'fare_option'
@@ -507,7 +469,7 @@ async function addFlightColumns(connection) {
       `);
     }
     
-    // fare_basis column
+  
     const [fareBasisResult] = await connection.query(`
       SELECT COUNT(*) AS count FROM INFORMATION_SCHEMA.COLUMNS
       WHERE TABLE_NAME = 'flights' AND COLUMN_NAME = 'fare_basis'
@@ -519,7 +481,7 @@ async function addFlightColumns(connection) {
       `);
     }
     
-    // fare_class2 column
+
     const [fareClass2Result] = await connection.query(`
       SELECT COUNT(*) AS count FROM INFORMATION_SCHEMA.COLUMNS
       WHERE TABLE_NAME = 'flights' AND COLUMN_NAME = 'fare_class2'
@@ -530,8 +492,7 @@ async function addFlightColumns(connection) {
         ALTER TABLE flights ADD COLUMN fare_class2 VARCHAR(50) DEFAULT NULL
       `);
     }
-    
-    // currency column
+
     const [currencyResult] = await connection.query(`
       SELECT COUNT(*) AS count FROM INFORMATION_SCHEMA.COLUMNS
       WHERE TABLE_NAME = 'flights' AND COLUMN_NAME = 'currency'
@@ -550,13 +511,10 @@ async function addFlightColumns(connection) {
   }
 }
 
-/**
- * Add from_iata and to_iata columns to flights table
- * @param {Object} connection - MySQL connection object
- */
+
 async function addIataColumns(connection) {
   try {
-    // from_iata column
+
     const [fromIataResult] = await connection.query(`
       SELECT COUNT(*) AS count FROM INFORMATION_SCHEMA.COLUMNS
       WHERE TABLE_NAME = 'flights' AND COLUMN_NAME = 'from_iata'
@@ -568,7 +526,7 @@ async function addIataColumns(connection) {
       `);
     }
     
-    // to_iata column
+
     const [toIataResult] = await connection.query(`
       SELECT COUNT(*) AS count FROM INFORMATION_SCHEMA.COLUMNS
       WHERE TABLE_NAME = 'flights' AND COLUMN_NAME = 'to_iata'
@@ -587,13 +545,9 @@ async function addIataColumns(connection) {
   }
 }
 
-/**
- * Add missing columns to hotels table
- * @param {Object} connection - MySQL connection object
- */
 async function addHotelColumns(connection) {
   try {
-    // room column
+    
     const [roomResult] = await connection.query(`
       SELECT COUNT(*) AS count FROM INFORMATION_SCHEMA.COLUMNS
       WHERE TABLE_NAME = 'hotels' AND COLUMN_NAME = 'room'
@@ -605,7 +559,7 @@ async function addHotelColumns(connection) {
       `);
     }
     
-    // policies column
+
     const [policiesResult] = await connection.query(`
       SELECT COUNT(*) AS count FROM INFORMATION_SCHEMA.COLUMNS
       WHERE TABLE_NAME = 'hotels' AND COLUMN_NAME = 'policies'
@@ -617,7 +571,7 @@ async function addHotelColumns(connection) {
       `);
     }
     
-    // check_in_date column
+
     const [checkInDateResult] = await connection.query(`
       SELECT COUNT(*) AS count FROM INFORMATION_SCHEMA.COLUMNS
       WHERE TABLE_NAME = 'hotels' AND COLUMN_NAME = 'check_in_date'
@@ -629,7 +583,7 @@ async function addHotelColumns(connection) {
       `);
     }
     
-    // check_out_date column
+
     const [checkOutDateResult] = await connection.query(`
       SELECT COUNT(*) AS count FROM INFORMATION_SCHEMA.COLUMNS
       WHERE TABLE_NAME = 'hotels' AND COLUMN_NAME = 'check_out_date'
@@ -641,7 +595,7 @@ async function addHotelColumns(connection) {
       `);
     }
     
-    // adults column
+
     const [adultsResult] = await connection.query(`
       SELECT COUNT(*) AS count FROM INFORMATION_SCHEMA.COLUMNS
       WHERE TABLE_NAME = 'hotels' AND COLUMN_NAME = 'adults'
@@ -653,7 +607,7 @@ async function addHotelColumns(connection) {
       `);
     }
     
-    // city_code column
+
     const [cityCodeResult] = await connection.query(`
       SELECT COUNT(*) AS count FROM INFORMATION_SCHEMA.COLUMNS
       WHERE TABLE_NAME = 'hotels' AND COLUMN_NAME = 'city_code'
@@ -665,7 +619,7 @@ async function addHotelColumns(connection) {
       `);
     }
     
-    // number_of_adults column
+
     const [numberOfAdultsResult] = await connection.query(`
       SELECT COUNT(*) AS count FROM INFORMATION_SCHEMA.COLUMNS
       WHERE TABLE_NAME = 'hotels' AND COLUMN_NAME = 'number_of_adults'
@@ -677,7 +631,7 @@ async function addHotelColumns(connection) {
       `);
     }
     
-    // image_url column
+
     const [imageUrlResult] = await connection.query(`
       SELECT COUNT(*) AS count FROM INFORMATION_SCHEMA.COLUMNS
       WHERE TABLE_NAME = 'hotels' AND COLUMN_NAME = 'image_url'
@@ -689,7 +643,7 @@ async function addHotelColumns(connection) {
       `);
     }
     
-    // room_type column
+
     const [roomTypeResult] = await connection.query(`
       SELECT COUNT(*) AS count FROM INFORMATION_SCHEMA.COLUMNS
       WHERE TABLE_NAME = 'hotels' AND COLUMN_NAME = 'room_type'
@@ -701,7 +655,6 @@ async function addHotelColumns(connection) {
       `);
     }
     
-    // room_beds column
     const [roomBedsResult] = await connection.query(`
       SELECT COUNT(*) AS count FROM INFORMATION_SCHEMA.COLUMNS
       WHERE TABLE_NAME = 'hotels' AND COLUMN_NAME = 'room_beds'
@@ -713,7 +666,6 @@ async function addHotelColumns(connection) {
       `);
     }
     
-    // room_bed_type column
     const [roomBedTypeResult] = await connection.query(`
       SELECT COUNT(*) AS count FROM INFORMATION_SCHEMA.COLUMNS
       WHERE TABLE_NAME = 'hotels' AND COLUMN_NAME = 'room_bed_type'
@@ -725,7 +677,7 @@ async function addHotelColumns(connection) {
       `);
     }
     
-    // room_description column
+
     const [roomDescriptionResult] = await connection.query(`
       SELECT COUNT(*) AS count FROM INFORMATION_SCHEMA.COLUMNS
       WHERE TABLE_NAME = 'hotels' AND COLUMN_NAME = 'room_description'
@@ -737,7 +689,7 @@ async function addHotelColumns(connection) {
       `);
     }
     
-    // room_details column
+ 
     const [roomDetailsResult] = await connection.query(`
       SELECT COUNT(*) AS count FROM INFORMATION_SCHEMA.COLUMNS
       WHERE TABLE_NAME = 'hotels' AND COLUMN_NAME = 'room_details'
@@ -749,7 +701,7 @@ async function addHotelColumns(connection) {
       `);
     }
     
-    // cancellation_policy column
+
     const [cancellationPolicyResult] = await connection.query(`
       SELECT COUNT(*) AS count FROM INFORMATION_SCHEMA.COLUMNS
       WHERE TABLE_NAME = 'hotels' AND COLUMN_NAME = 'cancellation_policy'
@@ -761,7 +713,7 @@ async function addHotelColumns(connection) {
       `);
     }
     
-    // payment_methods column
+
     const [paymentMethodsResult] = await connection.query(`
       SELECT COUNT(*) AS count FROM INFORMATION_SCHEMA.COLUMNS
       WHERE TABLE_NAME = 'hotels' AND COLUMN_NAME = 'payment_methods'
@@ -773,7 +725,7 @@ async function addHotelColumns(connection) {
       `);
     }
     
-    // policy_details column
+
     const [policyDetailsResult] = await connection.query(`
       SELECT COUNT(*) AS count FROM INFORMATION_SCHEMA.COLUMNS
       WHERE TABLE_NAME = 'hotels' AND COLUMN_NAME = 'policy_details'
@@ -785,7 +737,7 @@ async function addHotelColumns(connection) {
       `);
     }
     
-    // contact_phone column
+
     const [contactPhoneResult] = await connection.query(`
       SELECT COUNT(*) AS count FROM INFORMATION_SCHEMA.COLUMNS
       WHERE TABLE_NAME = 'hotels' AND COLUMN_NAME = 'contact_phone'
@@ -797,7 +749,7 @@ async function addHotelColumns(connection) {
       `);
     }
     
-    // contact_email column
+   
     const [contactEmailResult] = await connection.query(`
       SELECT COUNT(*) AS count FROM INFORMATION_SCHEMA.COLUMNS
       WHERE TABLE_NAME = 'hotels' AND COLUMN_NAME = 'contact_email'
@@ -809,7 +761,7 @@ async function addHotelColumns(connection) {
       `);
     }
     
-    // contact_details column
+  
     const [contactDetailsResult] = await connection.query(`
       SELECT COUNT(*) AS count FROM INFORMATION_SCHEMA.COLUMNS
       WHERE TABLE_NAME = 'hotels' AND COLUMN_NAME = 'contact_details'
@@ -821,7 +773,7 @@ async function addHotelColumns(connection) {
       `);
     }
     
-    // full_hotel_data column
+
     const [fullHotelDataResult] = await connection.query(`
       SELECT COUNT(*) AS count FROM INFORMATION_SCHEMA.COLUMNS
       WHERE TABLE_NAME = 'hotels' AND COLUMN_NAME = 'full_hotel_data'
@@ -840,10 +792,7 @@ async function addHotelColumns(connection) {
   }
 }
 
-/**
- * Create trip_packing_lists table if it doesn't exist
- * @param {Object} connection - MySQL connection object
- */
+
 async function createTripPackingListsTable(connection) {
   try {
     await connection.query(`
@@ -863,10 +812,7 @@ async function createTripPackingListsTable(connection) {
   }
 }
 
-/**
- * Create weather table if it doesn't exist
- * @param {Object} connection - MySQL connection object
- */
+
 async function createWeatherTable(connection) {
   try {
     await connection.query(`
@@ -895,10 +841,6 @@ async function createWeatherTable(connection) {
   }
 }
 
-/**
- * Create local_recommendations table if it doesn't exist
- * @param {Object} connection - MySQL connection object
- */
 async function createLocalRecommendationsTable(connection) {
   try {
     await connection.query(`
@@ -929,13 +871,10 @@ async function createLocalRecommendationsTable(connection) {
   }
 }
 
-/**
- * Update flights table to match new schema
- * @param {Object} connection - MySQL connection object
- */
+
 async function updateFlightsTableSchema(connection) {
   try {
-    // Add bag_weight column
+
     const [bagWeightResult] = await connection.query(`
       SELECT COUNT(*) AS count FROM INFORMATION_SCHEMA.COLUMNS
       WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'flights' AND COLUMN_NAME = 'bag_weight'
@@ -947,7 +886,7 @@ async function updateFlightsTableSchema(connection) {
       `);
     }
     
-    // Add bag_weight_unit column
+
     const [bagWeightUnitResult] = await connection.query(`
       SELECT COUNT(*) AS count FROM INFORMATION_SCHEMA.COLUMNS
       WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'flights' AND COLUMN_NAME = 'bag_weight_unit'
@@ -959,7 +898,7 @@ async function updateFlightsTableSchema(connection) {
       `);
     }
 
-    // Add leg_number column
+      
     const [legNumberResult] = await connection.query(`
       SELECT COUNT(*) AS count FROM INFORMATION_SCHEMA.COLUMNS
       WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'flights' AND COLUMN_NAME = 'leg_number'
@@ -971,7 +910,7 @@ async function updateFlightsTableSchema(connection) {
       `);
     }
 
-    // Add flight_type column
+ 
     const [flightTypeResult] = await connection.query(`
       SELECT COUNT(*) AS count FROM INFORMATION_SCHEMA.COLUMNS
       WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'flights' AND COLUMN_NAME = 'flight_type'
@@ -982,7 +921,7 @@ async function updateFlightsTableSchema(connection) {
         ALTER TABLE flights ADD COLUMN flight_type ENUM('one-way', 'round-trip', 'multi-city') DEFAULT 'one-way'
       `);
     } else {
-      // Update existing ENUM to include 'multi-city' if not already present
+     
       try {
         await connection.query(`
           ALTER TABLE flights MODIFY COLUMN flight_type ENUM('one-way', 'round-trip', 'multi-city') DEFAULT 'one-way'
@@ -995,17 +934,13 @@ async function updateFlightsTableSchema(connection) {
     console.log('Updated flights table schema if needed.');
   } catch (error) {
     console.error('Error updating flights table schema:', error);
-    // Don't throw error, just log it to prevent server crash
+
   }
 }
 
-/**
- * Update hotels table to match new schema
- * @param {Object} connection - MySQL connection object
- */
 async function updateHotelsTableSchema(connection) {
   try {
-    // Add stops column to hotels table
+
     const [stopsResult] = await connection.query(`
       SELECT COUNT(*) AS count FROM INFORMATION_SCHEMA.COLUMNS
       WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'hotels' AND COLUMN_NAME = 'stops'
@@ -1020,17 +955,14 @@ async function updateHotelsTableSchema(connection) {
     console.log('Updated hotels table schema if needed.');
   } catch (error) {
     console.error('Error updating hotels table schema:', error);
-    // Don't throw error, just log it to prevent server crash
+   
   }
 }
 
-/**
- * Ensure saved_trips table has updated_at column
- * @param {Object} connection - MySQL connection object
- */
+
 async function ensureSavedTripsUpdatedAtColumn(connection) {
   try {
-    // Check if updated_at column exists in saved_trips table
+
     const [updatedAtResult] = await connection.query(`
       SELECT COUNT(*) AS count FROM INFORMATION_SCHEMA.COLUMNS
       WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'saved_trips' AND COLUMN_NAME = 'updated_at'
@@ -1046,8 +978,81 @@ async function ensureSavedTripsUpdatedAtColumn(connection) {
     }
   } catch (error) {
     console.error('Error ensuring saved_trips updated_at column:', error);
-    // Don't throw error, just log it to prevent server crash
+   
   }
 }
 
-module.exports = { applyDatabaseModifications };
+async function increaseImageUrlLength(connection) {
+  try {
+    const [columnInfo] = await connection.query(`
+      SELECT COLUMN_TYPE FROM INFORMATION_SCHEMA.COLUMNS
+      WHERE TABLE_NAME = 'hotels' AND COLUMN_NAME = 'image_url'
+    `);
+
+    const currentType = columnInfo[0]?.COLUMN_TYPE || '';
+
+    if (currentType.includes('varchar(255)')) {
+      await connection.query(`
+        ALTER TABLE hotels MODIFY COLUMN image_url VARCHAR(1000)
+      `);
+      console.log('Increased image_url column length to 1000 characters.');
+    } else if (!currentType.includes('varchar') && !currentType.includes('text')) {
+      await connection.query(`
+        ALTER TABLE hotels MODIFY COLUMN image_url TEXT
+      `);
+      console.log('Changed image_url column to TEXT.');
+    } else {
+      console.log('image_url column already has sufficient length.');
+    }
+  } catch (error) {
+    console.error('Error increasing image_url length:', error);
+    throw error;
+  }
+}
+
+module.exports = { applyDatabaseModifications, addUniqueKeyToSavedTrips };
+async function addUniqueKeyToSavedTrips(connection) {
+  try {
+    const [uniqueKeyResult] = await connection.query(`
+      SELECT COUNT(*) AS count FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS
+      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'saved_trips' AND CONSTRAINT_TYPE = 'UNIQUE' AND CONSTRAINT_NAME = 'unique_trip_id'
+    `);
+    
+    if (uniqueKeyResult[0].count > 0) {
+      console.log('Unique key already exists on saved_trips table.');
+      return;
+    }
+
+    // Check for duplicates
+    const [duplicatesResult] = await connection.query(`
+      SELECT trip_id, COUNT(*) as count
+      FROM saved_trips
+      GROUP BY trip_id
+      HAVING count > 1
+    `);
+
+    if (duplicatesResult.length > 0) {
+      console.log('Duplicates found in saved_trips. Removing duplicates...');
+      for (const dup of duplicatesResult) {
+        // Keep the record with the latest updated_at
+        await connection.query(`
+          DELETE s1 FROM saved_trips s1
+          INNER JOIN saved_trips s2
+          WHERE s1.trip_id = ? AND s1.id < s2.id AND s1.trip_id = s2.trip_id AND s1.updated_at < s2.updated_at
+        `, [dup.trip_id]);
+      }
+      console.log('Duplicates removed from saved_trips table.');
+    } else {
+      console.log('No duplicates found in saved_trips table.');
+    }
+
+    // Now add the unique key
+    await connection.query(`
+      ALTER TABLE saved_trips ADD UNIQUE KEY unique_trip_id (trip_id)
+    `);
+    console.log('Added unique key to saved_trips table on trip_id.');
+  } catch (error) {
+    console.error('Error adding unique key to saved_trips:', error);
+    throw error;
+  }
+}

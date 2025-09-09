@@ -81,7 +81,6 @@ const {
   syncOfflineHotels,
 } = useHotelSearch();
 
-// Helper functions to extract hotel details
 const getHotelLocation = () => {
   if (tripStore.hotel) {
     return tripStore.hotel.location || tripStore.destination || '';
@@ -106,7 +105,7 @@ const getHotelGuests = () => {
 onMounted(() => {
   syncOfflineHotels();
   
-  // Set flag to return to SummaryMyTrip page after selection
+ 
   localStorage.setItem('returnToSummaryMyTrip', 'true');
   localStorage.setItem('summaryTripId', String(tripStore.tripId));
 });

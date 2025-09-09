@@ -17,17 +17,7 @@
           {{ name }}
         </h4>
         
-        <!-- More Details Button - Prominent placement -->
-        <button
-          @click.stop="$emit('view-details')"
-          class="text-sm text-teal-600 hover:text-teal-800 transition-colors px-3 py-1 bg-teal-50 hover:bg-teal-100 rounded-md flex items-center ml-2 shadow-sm"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
-            <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
-            <path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd" />
-          </svg>
-          More Details
-        </button>
+       
       </div>
 
       <textarea
@@ -37,7 +27,7 @@
         class="text-sm text-gray-600 w-full p-1 border rounded mt-1"
         rows="3"
       ></textarea>
-      <p v-else class="text-sm text-gray-600 mt-1" :class="{ 'line-clamp-2': !showFullDescription }">
+      <p v-else class="text-sm text-gray-600 mt-1">
         {{ description || 'No description available.' }}
       </p>
 
@@ -70,14 +60,17 @@
       <!-- Action buttons -->
       <div class="mt-3 flex justify-between items-center">
         <div class="flex gap-2">
-          <!-- Toggle description button -->
-          <button
-            v-if="description && description.length > 0"
-            @click.stop="toggleDescription"
-            class="text-sm text-gray-600 hover:text-gray-800 transition-colors px-2 py-1 bg-gray-100 rounded-md"
-          >
-            {{ showFullDescription ? 'Show less' : 'Show more' }}
-          </button>
+           <!-- More Details Button  -->
+        <button
+          @click.stop="$emit('view-details')"
+          class="text-sm text-teal-600 hover:text-teal-800 transition-colors px-3 py-1 bg-teal-50 hover:bg-teal-100 rounded-md flex items-center ml-2 shadow-sm"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
+            <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
+            <path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd" />
+          </svg>
+          More Details
+        </button>
         </div>
         
         <div class="flex gap-2">

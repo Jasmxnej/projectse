@@ -95,6 +95,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
 import axios from 'axios';
+import { useTripStore } from '@/stores/trip';
 
 const props = defineProps({
   destination: {
@@ -223,6 +224,10 @@ const fetchLocalRecommendations = async () => {
   categorizedRecommendations.value = { categories: [] };
   
   try {
+    const tripStore = useTripStore();
+    const plannedActivities = tripStore.tripDays.flatMap(day => day.activities.map((activity: any) => activity.name)).join(', ');
+    const excludePrompt = plannedActivities ? `\n\nDo not recommend any of these planned activities or places: ${plannedActivities}. Suggest completely different recommendations that complement but do not overlap with the existing plan.` : '';
+    
     // Use Gemini to generate categorized recommendations
     const response = await axios.post('http://localhost:3002/api/gemini/generate', {
       prompt: {
@@ -240,20 +245,20 @@ const fetchLocalRecommendations = async () => {
             - For Famous Activities, focus on hands-on experiences and activities (NOT places or attractions)
             - Name
             - Brief description (1-2 sentences in simple language)
-            - Leave the image field empty, it will be filled with Unsplash images
+            - Leave the image field empty, it will be filled with Unsplash images${excludePrompt}
             
             Format your response as a JSON object with this structure:
             {
               "categories": [
                 {
-                  "name": "Category Name",
-                  "items": [
-                    {
-                      "name": "Item Name",
-                      "description": "Item description",
-                      "image": ""
-                    }
-                  ]
+                    "name": "Category Name",
+                    "items": [
+                      {
+                        "name": "Item Name",
+                        "description": "Item description",
+                        "image": ""
+                      }
+                    ]
                 }
               ]
             }`

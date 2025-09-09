@@ -5,7 +5,7 @@
         <h3 class="text-lg font-semibold text-gray-800">Recommendations</h3>
         <div class="flex items-center space-x-2">
           <span class="text-sm text-gray-500">{{ tripStore.destination }}</span>
-          <span class="bg-teal-100 text-teal-800 text-xs font-medium px-2.5 py-0.5 rounded">{{ recommendedItems.length }} places</span>
+          <span class="bg-teal-100 text-teal-800 text-xs font-medium px-2.5 py-0.5 rounded">{{ recommendedPlaces.length }} places</span>
         </div>
       </div>
       
@@ -60,12 +60,12 @@
           <span>Recommended for you</span>
           <span v-if="isGenerating" class="ml-2 inline-block h-4 w-4 rounded-full border-2 border-t-teal-600 animate-spin"></span>
         </h4>
-        <div v-if="recommendedItems.length === 0 && !isGenerating" class="text-center py-6 bg-gray-50 rounded-lg">
+        <div v-if="recommendedPlaces.length === 0 && !isGenerating" class="text-center py-6 bg-gray-50 rounded-lg">
           <p class="text-gray-500">No recommendations available yet.</p>
           <p class="text-sm text-gray-400 mt-1">Try generating with AI or searching for places.</p>
         </div>
         <RecommendationList
-          :items="recommendedItems"
+          :items="recommendedPlaces"
           @add="addRecommendationToPlan"
           :is-loading="isGenerating"
           @select="$emit('select-recommendation', $event)"
@@ -138,8 +138,15 @@ interface Recommendation {
   image: string;
   name: string;
   description: string;
+  suggestedTime?: string;
+  estimatedCost?: number;
   location?: string;
   added?: boolean;
+}
+
+interface Category {
+  name: string;
+  items: Recommendation[];
 }
 
 interface TripActivity {
@@ -160,7 +167,7 @@ interface TripDay {
 
 const props = defineProps({
   tripDays: { type: Array as () => TripDay[], required: true },
-  recommendedItems: { type: Array as () => Recommendation[], required: true },
+  recommendedItems: { type: Array as () => Category[], required: true },
   isGenerating: { type: Boolean, default: false },
 });
 
@@ -194,6 +201,11 @@ const draggedActivity = ref<{ dayId: number, index: number } | null>(null);
 let debounceTimer: any;
 const isSearchingPois = ref(false);
 
+const recommendedPlaces = computed(() => {
+  const rec = props.recommendedItems.find((cat: any) => cat.name === "Recommended Places");
+  return rec ? rec.items : [];
+});
+
 // Clear search function
 const clearSearch = () => {
   searchQuery.value = '';
@@ -201,13 +213,6 @@ const clearSearch = () => {
   emit('update:searchQuery', '');
 };
 
-const filteredRecommendations = computed(() => {
-  if (!searchQuery.value) return props.recommendedItems;
-  return props.recommendedItems.filter((item) =>
-    item.name.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
-    item.description.toLowerCase().includes(searchQuery.value.toLowerCase())
-  );
-});
 
 const getDestinationCoords = async () => {
   if (tripStore.destination) {
@@ -309,7 +314,8 @@ const searchPois = async (query: string) => {
     console.error('Error generating AI search recommendations:', error);
     
     // Fallback to local results on error
-    const filteredLocal = props.recommendedItems.filter(item =>
+    const flatItems = props.recommendedItems.flatMap((cat: Category) => cat.items);
+    const filteredLocal = flatItems.filter(item =>
       item.name.toLowerCase().includes(query.toLowerCase()) ||
       (item.description && item.description.toLowerCase().includes(query.toLowerCase()))
     ).slice(0, 5);
@@ -327,8 +333,8 @@ const addPoiToPlan = (poi: any) => {
     id: Date.now(),
     name: poi.name,
     image: poi.image || getCategoryIcon(poi.category),
-    time: '10:00',
-    cost: 0,
+    time: poi.suggestedTime || '10:00',
+    cost: poi.estimatedCost || 0,
     description: poi.description || `A ${poi.category?.toLowerCase() || 'interesting'} place in ${tripStore.destination}`,
     location: poi.location || tripStore.destination
   };
@@ -347,22 +353,12 @@ const addRecommendationToPlan = (item: Recommendation) => {
     id: Date.now(),
     name: item.name,
     image: item.image,
-    time: '10:00',
-    cost: 0,
+    time: item.suggestedTime || '10:00',
+    cost: item.estimatedCost || 0,
     description: item.description,
     location: item.location || tripStore.destination
   };
   emit('add-activity', newActivity);
-  
-  // Show visual feedback that item was added
-  const successIndex = props.recommendedItems.findIndex(rec => rec.id === item.id);
-  if (successIndex !== -1) {
-    // Create a copy to avoid mutating props directly
-    const updatedItems = [...props.recommendedItems];
-    if (updatedItems[successIndex]) {
-      updatedItems[successIndex] = { ...updatedItems[successIndex], added: true };
-    }
-  }
 };
 
 const handleDragStart = (payload: { event: DragEvent; dayId: number; index: number }) => {
@@ -478,44 +474,50 @@ const getInitialRecommendations = async () => {
     }
 
     // Use Gemini AI to generate place recommendations with trip data
-    const promptText = `Generate exactly 5 specific place recommendations for ${tripStore.destination} based on this trip profile:
+    const promptText = `Generate exactly 5 specific, real place recommendations for ${tripStore.destination} based on this trip profile:
     - Trip activities/interests: ${activitiesText}
     - Group size: ${tripData?.group_size || 'Not specified'}
     - Budget level: ${tripData?.budget ? `Approximately ${tripData.budget} THB total` : 'Not specified'}${specialNeedsText}${otherActivityText}
 
-    IMPORTANT: You must provide exactly 5 recommendations with UNIQUE categories from these options: SIGHTS, SHOPPING, RESTAURANT, NIGHTLIFE, CULTURE. Each category can only be used once.
+    IMPORTANT: You must provide exactly 5 REAL, EXISTING places in ${tripStore.destination} with UNIQUE categories from these options: SIGHTS, SHOPPING, RESTAURANT, NIGHTLIFE, CULTURE. Each category can only be used once.
 
     For each place, provide:
-    - name: The exact name of the place
+    - name: The exact, real name of an actual place/location in ${tripStore.destination}
     - description: A detailed 2-3 sentence description explaining what makes this place special and worth visiting, considering the trip preferences
     - category: One of SIGHTS, SHOPPING, RESTAURANT, NIGHTLIFE, or CULTURE (each category used exactly once)
+
+    CRITICAL: Use only REAL, EXISTING places that actually exist in ${tripStore.destination}. Do not invent fictional places.
 
     Respond ONLY with valid JSON in this exact format:
     {
       "recommendations": [
         {
-          "name": "Place Name",
-          "description": "Detailed description of the place and why visitors should go there based on trip preferences",
+          "name": "Real Place Name 1",
+          "description": "Detailed description of why this real place is worth visiting based on trip preferences",
+          "suggestedTime": "09:00",
+          "estimatedCost": 50,
           "category": "SIGHTS"
         },
         {
-          "name": "Place Name 2",
-          "description": "Detailed description of the place and why visitors should go there based on trip preferences",
+          "name": "Real Place Name 2",
+          "description": "Detailed description of why this real place is worth visiting based on trip preferences",
           "category": "SHOPPING"
         },
         {
-          "name": "Place Name 3",
-          "description": "Detailed description of the place and why visitors should go there based on trip preferences",
+          "name": "Real Place Name 3",
+          "description": "Detailed description of why this real place is worth visiting based on trip preferences",
           "category": "RESTAURANT"
         },
         {
-          "name": "Place Name 4",
-          "description": "Detailed description of the place and why visitors should go there based on trip preferences",
+          "name": "Real Place Name 4",
+          "description": "Detailed description of why this real place is worth visiting based on trip preferences",
           "category": "NIGHTLIFE"
         },
         {
-          "name": "Place Name 5",
-          "description": "Detailed description of the place and why visitors should go there based on trip preferences",
+          "name": "Real Place Name 5",
+          "description": "Detailed description of why this real place is worth visiting based on trip preferences",
+          "suggestedTime": "14:00",
+          "estimatedCost": 100,
           "category": "CULTURE"
         }
       ]
@@ -610,19 +612,19 @@ const getInitialRecommendations = async () => {
       const dest = destination.toLowerCase();
       if (dest.includes('bangkok')) {
         return [
-          { name: "MBK Center", description: "One of Bangkok's most popular shopping malls with 8 floors of shops, restaurants, and entertainment. Perfect for finding everything from electronics to fashion at great prices.", category: "SHOPPING" },
-          { name: "Grand Palace", description: "Historic royal palace complex with stunning Thai architecture and the sacred Emerald Buddha temple. A must-visit cultural landmark showcasing Thailand's rich heritage.", category: "SIGHTS" },
-          { name: "Chatuchak Weekend Market", description: "One of the world's largest weekend markets with over 15,000 stalls selling everything from vintage clothes to exotic pets. A shopper's paradise and cultural experience.", category: "SHOPPING" },
-          { name: "Wat Arun (Temple of Dawn)", description: "Beautiful Buddhist temple on the Chao Phraya River with intricate porcelain decorations. Climb the steep steps for panoramic views of Bangkok.", category: "CULTURE" },
-          { name: "Khao San Road", description: "Famous backpacker street with vibrant nightlife, street food, bars, and budget accommodations. The heart of Bangkok's backpacker scene and nightlife.", category: "NIGHTLIFE" }
+          { name: "MBK Center", description: "One of Bangkok's most popular shopping malls with 8 floors of shops, restaurants, and entertainment. Perfect for finding everything from electronics to fashion at great prices.", category: "SHOPPING", suggestedTime: "10:00", estimatedCost: 0 },
+          { name: "Grand Palace", description: "Historic royal palace complex with stunning Thai architecture and the sacred Emerald Buddha temple. A must-visit cultural landmark showcasing Thailand's rich heritage.", category: "SIGHTS", suggestedTime: "09:00", estimatedCost: 500 },
+          { name: "Chatuchak Weekend Market", description: "One of the world's largest weekend markets with over 15,000 stalls selling everything from vintage clothes to exotic pets. A shopper's paradise and cultural experience.", category: "SHOPPING", suggestedTime: "11:00", estimatedCost: 0 },
+          { name: "Wat Arun (Temple of Dawn)", description: "Beautiful Buddhist temple on the Chao Phraya River with intricate porcelain decorations. Climb the steep steps for panoramic views of Bangkok.", category: "CULTURE", suggestedTime: "08:00", estimatedCost: 100 },
+          { name: "Khao San Road", description: "Famous backpacker street with vibrant nightlife, street food, bars, and budget accommodations. The heart of Bangkok's backpacker scene and nightlife.", category: "NIGHTLIFE", suggestedTime: "20:00", estimatedCost: 200 }
         ];
       } else {
         return [
-          { name: `${destination} Central Market`, description: `The main market in ${destination} where locals shop for fresh produce, handicrafts, and traditional goods. Experience authentic local culture and flavors.`, category: "SHOPPING" },
-          { name: `${destination} Historic District`, description: `The old town area of ${destination} featuring traditional architecture, museums, and cultural sites. Perfect for learning about local history and heritage.`, category: "CULTURE" },
-          { name: `${destination} Night Market`, description: `Evening market in ${destination} with street food, local crafts, and entertainment. Great place to experience local nightlife and cuisine.`, category: "NIGHTLIFE" },
-          { name: `${destination} Temple Complex`, description: `Beautiful religious site in ${destination} showcasing local spiritual traditions and architecture. A peaceful place for reflection and cultural appreciation.`, category: "CULTURE" },
-          { name: `${destination} Shopping Center`, description: `Modern shopping mall in ${destination} with international brands, restaurants, and entertainment facilities. Perfect for comfortable shopping and dining.`, category: "SHOPPING" }
+          { name: `${destination} Central Market`, description: `The main market in ${destination} where locals shop for fresh produce, handicrafts, and traditional goods. Experience authentic local culture and flavors.`, category: "SHOPPING", suggestedTime: "09:00", estimatedCost: 0 },
+          { name: `${destination} Historic District`, description: `The old town area of ${destination} featuring traditional architecture, museums, and cultural sites. Perfect for learning about local history and heritage.`, category: "CULTURE", suggestedTime: "10:00", estimatedCost: 200 },
+          { name: `${destination} Night Market`, description: `Evening market in ${destination} with street food, local crafts, and entertainment. Great place to experience local nightlife and cuisine.`, category: "NIGHTLIFE", suggestedTime: "18:00", estimatedCost: 100 },
+          { name: `${destination} Temple Complex`, description: `Beautiful religious site in ${destination} showcasing local spiritual traditions and architecture. A peaceful place for reflection and cultural appreciation.`, category: "CULTURE", suggestedTime: "08:00", estimatedCost: 50 },
+          { name: `${destination} Shopping Center`, description: `Modern shopping mall in ${destination} with international brands, restaurants, and entertainment facilities. Perfect for comfortable shopping and dining.`, category: "SHOPPING", suggestedTime: "14:00", estimatedCost: 0 }
         ];
       }
     };
@@ -642,6 +644,8 @@ const getInitialRecommendations = async () => {
           name: place.name,
           description: place.description,
           image: imageResponse.data.image || getCategoryIcon(place.category),
+          suggestedTime: place.suggestedTime,
+          estimatedCost: place.estimatedCost,
           category: place.category
         };
       } catch (imageError) {
@@ -650,6 +654,8 @@ const getInitialRecommendations = async () => {
           name: place.name,
           description: place.description,
           image: getCategoryIcon(place.category),
+          suggestedTime: place.suggestedTime,
+          estimatedCost: place.estimatedCost,
           category: place.category
         };
       }

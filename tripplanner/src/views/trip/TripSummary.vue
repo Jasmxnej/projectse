@@ -76,7 +76,7 @@
             <div v-if="selectedView === 'flight'">
               <div v-if="!flights || flights.length === 0 || (flights.length > 0 && flights.some(f => !f.airline || f.airline === 'Unknown Airline'))" class="text-center py-8 text-gray-500">
                 <p class="text-lg">You haven't selected a flight yet.</p>
-                <p class="text-sm mt-2">Click "Modify Trip" to add flight details.</p>
+           
               </div>
               <FlightDetailsCard v-else :flights="flights" :editable="false" />
             </div>
@@ -85,7 +85,7 @@
             <div v-else-if="selectedView === 'hotel'">
               <div v-if="!hotel || hotel.name === 'Skipped'" class="text-center py-8 text-gray-500">
                 <p class="text-lg">You haven't selected a hotel yet.</p>
-                <p class="text-sm mt-2">Click "Modify Trip" to add hotel details.</p>
+            
               </div>
               <HotelDetailsCard v-else :hotel="hotel" :destination="trip?.destination" :editable="false" />
             </div>

@@ -49,21 +49,24 @@ router.post('/amadeus/hotels', async (req, res) => {
     try {
       const hotelsByCityResponse = await amadeus.referenceData.locations.hotels.byCity.get({
         cityCode: cityCode,
-        radius: 20,
+        radius: 10, 
         radiusUnit: 'KM',
         hotelSource: 'ALL'
       });
       
-      const allHotelIds = hotelsByCityResponse.data.map(hotel => hotel.hotelId);
+      let allHotelIds = hotelsByCityResponse.data.map(hotel => hotel.hotelId);
       const totalHotels = allHotelIds.length;
 
       if (totalHotels === 0) {
         throw new Error('No hotels found');
       }
 
-      const totalPages = Math.ceil(totalHotels / limit);
+      // Limit to top 50 hotels by rank for faster processing
+      allHotelIds = allHotelIds.slice(0, 50);
+
+      const totalPages = Math.ceil(allHotelIds.length / limit);
       const startIndex = (page - 1) * limit;
-      const endIndex = Math.min(startIndex + limit, totalHotels);
+      const endIndex = Math.min(startIndex + limit, allHotelIds.length);
       const paginatedHotelIds = allHotelIds.slice(startIndex, endIndex);
 
       if (paginatedHotelIds.length === 0) {
@@ -71,8 +74,9 @@ router.post('/amadeus/hotels', async (req, res) => {
       }
 
       const availableHotels = [];
-      for (let i = 0; i < paginatedHotelIds.length; i += 5) {
-        const batchIds = paginatedHotelIds.slice(i, i + 5);
+      // Smaller batch size for faster parallel processing
+      for (let i = 0; i < paginatedHotelIds.length; i += 3) {
+        const batchIds = paginatedHotelIds.slice(i, i + 3);
         if (batchIds.length === 0) continue;
 
         try {
@@ -84,8 +88,8 @@ router.post('/amadeus/hotels', async (req, res) => {
                 checkInDate,
                 checkOutDate,
                 adults,
-                ratings: '2,3,4,5',
-                amenities: 'SWIMMING_POOL,SPA,FITNESS_CENTER,RESTAURANT,PARKING,WIFI,KITCHEN',
+                ratings: '2,3,4,5', 
+                amenities: 'SWIMMING_POOL,SPA,FITNESS_CENTER,RESTAURANT,PARKING,WIFI', 
                 bestRateOnly: true,
                 view: 'FULL_ALL_IMAGES',
                 sort: 'PRICE'
@@ -97,7 +101,7 @@ router.post('/amadeus/hotels', async (req, res) => {
               }
             } catch (singleHotelError) {
               console.error(`Error fetching hotel offer for ${hotelId}:`, singleHotelError.description || singleHotelError.message);
-              // Continue with next hotel ID
+              
             }
           }
         } catch (batchError) {
@@ -129,7 +133,6 @@ router.post('/amadeus/hotels', async (req, res) => {
         });
       }
 
-      // Ensure we have at least some hotels by falling back to unfiltered if filtered result is too small
       if (filteredHotels.length < 3 && availableHotels.length > 0) {
         console.log('Filtered results too small, using unfiltered results');
         filteredHotels = availableHotels;
@@ -143,13 +146,12 @@ router.post('/amadeus/hotels', async (req, res) => {
       
     } catch (amadeusError) {
       console.error('Amadeus API Error:', amadeusError.description || amadeusError.message);
-      throw amadeusError; // Re-throw to be caught by the outer catch block
+      throw amadeusError; 
     }
     
   } catch (error) {
     console.error('Error in /hotels:', error.description || error.message);
     
-    // Extract cityCode from request body again to ensure it's in scope
     const { cityCode, checkInDate, checkOutDate, adults } = req.body;
     
     // Generate mock hotel data as fallback
@@ -218,7 +220,7 @@ router.post('/amadeus/hotels', async (req, res) => {
           hotelId: `MOCK${i+1}`,
           name: hotelNames[index],
           cityCode: cityCode,
-          rating: Math.floor(Math.random() * 2) + 3, // 3-5 stars
+          rating: Math.floor(Math.random() * 2) + 3, 
         },
         available: true,
         offers: [{
@@ -844,13 +846,13 @@ router.get('/unsplash/image', async (req, res) => {
       searchQuery = `${place} landmark tourist attraction`;
     }
 
-    // Try Unsplash API first with improved query
+   
     const result = await axios.get('https://api.unsplash.com/search/photos', {
       params: {
         query: searchQuery,
-        per_page: 3, // Get more results to choose from
+        per_page: 3, 
         orientation: 'landscape',
-        content_filter: 'high' // Only high-quality images
+        content_filter: 'high'
       },
       headers: {
         Authorization: `Client-ID ${unsplashConfig.accessKey}`

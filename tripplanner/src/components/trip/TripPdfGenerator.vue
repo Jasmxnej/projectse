@@ -169,8 +169,8 @@ const generateCompletePdf = async () => {
     const imgData = canvas.toDataURL('image/jpeg', 0.98);
     const pdf = new jsPDF('p', 'mm', 'a4');
 
-    const imgWidth = 210; // A4 width in mm
-    const pageHeight = 295; // A4 height in mm
+    const imgWidth = 210; 
+    const pageHeight = 295; 
     const imgHeight = (canvas.height * imgWidth) / canvas.width;
     let heightLeft = imgHeight;
 

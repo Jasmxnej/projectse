@@ -36,7 +36,7 @@
           @add-day="addDay"
           @delete-day="deleteDay"
           @add-activity="addActivity"
-          @generate-ai="generateAITripPlan"
+          @generate-ai="generateAITripPlan(true, false, '', false)"
           :is-generating="isGenerating"
           @view-activity-details="showActivityDetails"
           @search="searchRecommendations"
@@ -61,6 +61,7 @@
             Save Trip Plan
           </button>
 
+         
           <button
             @click="viewSummary"
             type="button"
@@ -118,6 +119,7 @@
 <script setup lang="ts">
 import TripPlanner from '@/components/TripPlanner.vue';
 import BudgetCard from '@/components/BudgetCard.vue';
+import TripPdfGenerator from '@/components/trip/TripPdfGenerator.vue';
 import { defineProps, defineEmits, computed, ref, watch, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useTripStore } from '@/stores/trip';
@@ -315,74 +317,17 @@ const goBack = () => {
 };
 
 const loadMockScheduleIfNeeded = async () => {
+  // Always create empty schedule initially to keep plan blank until generate AI button is clicked
   if (tripDays.value.length === 0) {
-    try {
-      // Try to load from server first
-      const response = await axios.get(`http://localhost:3002/api/trips/${tripStore.tripId}/schedule`);
-      if (response.data && response.data.length > 0) {
-        tripStore.setTripDays(response.data.map((day: any) => ({
-          ...day,
-          id: day.id || Date.now() + Math.floor(Math.random() * 1000),
-          dayNumber: day.day,
-          name: day.day_name || `Day ${day.day}`,
-          activities: Array.isArray(day.activities) ? day.activities : []
-        })));
-      } else {
-        // If no data, generate with AI
-        await generateAITripPlan(true);
+    const emptySchedule = [
+      {
+        id: Date.now(),
+        dayNumber: 1,
+        name: 'Day 1',
+        activities: []
       }
-    } catch (error) {
-      console.error('Error loading schedule:', error);
-      errorMessage.value = 'Failed to load schedule from server. Using mock data instead.';
-      isMockData.value = true;
-      
-      try {
-        // Try to load from localStorage first
-        const localSchedule = localStorage.getItem(`trip-${tripStore.tripId}-schedule`);
-        if (localSchedule) {
-          tripStore.setTripDays(JSON.parse(localSchedule));
-        } else {
-          // Use mock data as last resort
-          const mockResponse = await axios.get(`http://localhost:3002/api/trips/${tripStore.tripId}/schedule/mock`);
-          if (mockResponse.data && mockResponse.data.mockSchedule) {
-            tripStore.setTripDays(mockResponse.data.mockSchedule.map((day: any) => ({
-              ...day,
-              id: day.id || Date.now() + Math.floor(Math.random() * 1000),
-              dayNumber: day.day,
-              name: day.day_name || `Day ${day.day}`,
-              activities: Array.isArray(day.activities) ? day.activities : []
-            })));
-          } else {
-            // If server mock fails, use local mock data
-            const scheduleData = mockScheduleData;
-            if (scheduleData && scheduleData.schedule) {
-              const updatedTripDays = scheduleData.schedule.map((day: any) => ({
-                id: Date.now() + Math.floor(Math.random() * 1000),
-                dayNumber: day.day,
-                name: `Day ${day.day}`,
-                activities: day.activities.map((activity: any) => ({
-                  id: Date.now() + Math.floor(Math.random() * 1000),
-                  ...activity
-                }))
-              }));
-              tripStore.setTripDays(updatedTripDays);
-            }
-          }
-        }
-      } catch (mockError) {
-        console.error('Error loading mock schedule:', mockError);
-        // Generate empty schedule as last resort
-        const emptySchedule = [
-          {
-            id: Date.now(),
-            dayNumber: 1,
-            name: 'Day 1',
-            activities: []
-          }
-        ];
-        tripStore.setTripDays(emptySchedule);
-      }
-    }
+    ];
+    tripStore.setTripDays(emptySchedule);
   }
 };
 
@@ -396,7 +341,7 @@ onMounted(async () => {
   
   // Load recommendations if needed
   if (!recommendedItems.value.categories || recommendedItems.value.categories.length === 0) {
-    generateAITripPlan(false);
+    generateAITripPlan(false, false, '', true);
   }
 });
 </script>

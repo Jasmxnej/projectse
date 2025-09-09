@@ -87,15 +87,36 @@ export function useAiTrip() {
   const isMockData = ref(false);
   const errorMessage = ref('');
 
-  const generateAITripPlan = async (generateSchedule = true, searchQuery = '') => {
+  const generateAITripPlan = async (generateSchedule = true, isAlternative = false, searchQuery = '', updateRecommendations = true) => {
     if (isGenerating.value) return;
     isGenerating.value = true;
     isMockData.value = false;
     errorMessage.value = '';
 
-    const promptText = searchQuery
-      ? `Generate recommendations for ${searchQuery} in ${tripStore.destination}. Respond ONLY with valid JSON in the following format: {"categories": [{"name": "Food", "items": [{"name": "Place Name", "description": "A brief description", "image": ""}]}, {"name": "Shopping", "items": [{"name": "Place Name", "description": "A brief description", "image": ""}]}, {"name": "Culture", "items": [{"name": "Place Name", "description": "A brief description", "image": ""}]}, {"name": "Entertainment", "items": [{"name": "Place Name", "description": "A brief description", "image": ""}]}]}. Do not add explanations or comments.`
-      : `Generate a travel schedule for a trip to ${tripStore.destination} from ${tripStore.startDate} to ${tripStore.endDate} for ${tripStore.groupSize} people with a budget of ${tripStore.budget} and interests in ${tripStore.activities.join(', ')}. Respond ONLY with valid JSON in the following format: {"schedule": [{"day": 1, "activities": [{"name": "Place Name", "time": "09:00", "cost": 100, "image": "", "location": "City Center", "description": "A brief description."}]}],"categories": [{"name": "Food", "items": [{"name": "Place Name", "description": "A brief description", "image": ""}]}, {"name": "Shopping", "items": [{"name": "Place Name", "description": "A brief description", "image": ""}]}, {"name": "Culture", "items": [{"name": "Place Name", "description": "A brief description", "image": ""}]}, {"name": "Entertainment", "items": [{"name": "Place Name", "description": "A brief description", "image": ""}]}]}. Do not add explanations or comments.`;
+    let promptText;
+    if (searchQuery) {
+      promptText = `Generate recommendations for ${searchQuery} in ${tripStore.destination}. Respond ONLY with valid JSON in the following format: {"categories": [{"name": "Food", "items": [{"name": "Place Name", "description": "A brief description", "image": ""}]}, {"name": "Shopping", "items": [{"name": "Place Name", "description": "A brief description", "image": ""}]}, {"name": "Culture", "items": [{"name": "Place Name", "description": "A brief description", "image": ""}]}, {"name": "Entertainment", "items": [{"name": "Place Name", "description": "A brief description", "image": ""}]}]}. Do not add explanations or comments.`;
+    } else if (!generateSchedule) {
+      // Only generate recommendations/categories
+      promptText = `Generate travel recommendations for ${tripStore.destination}. Respond ONLY with valid JSON in the following format: {"categories": [{"name": "Food & Drinks", "items": [{"name": "Item Name", "description": "Brief description (1-2 sentences)", "image": ""}]}, {"name": "Shopping", "items": [{"name": "Item Name", "description": "Brief description (1-2 sentences)", "image": ""}]}, {"name": "Local Tips", "items": [{"name": "Tip Name", "description": "Brief description (1-2 sentences)", "image": ""}]}, {"name": "Famous Activities", "items": [{"name": "Activity Name", "description": "Brief description (1-2 sentences)", "image": ""}]}, {"name": "Recommended Places", "items": [{"name": "Famous Place Name", "description": "Brief description of this real famous place in ${tripStore.destination} (1-2 sentences)", "suggestedTime": "09:00", "estimatedCost": 50, "image": ""}]}]}. Include exactly 5 real famous places in the Recommended Places category, such as major landmarks, attractions, or must-visit spots in ${tripStore.destination}. For each place, include a suggested visit time (HH:MM format) and estimated cost in THB. Do not include schedule. Do not add explanations or comments.`;
+    } else {
+      // Full prompt for schedule and recommendations
+      promptText = `Generate a travel schedule for a trip to ${tripStore.destination} from ${tripStore.startDate} to ${tripStore.endDate} for ${tripStore.groupSize} people with a budget of ${tripStore.budget} and interests in ${tripStore.activities.join(', ')}. Respond ONLY with valid JSON in the following format: {"schedule": [{"day": 1, "activities": [{"name": "Place Name", "time": "09:00", "cost": 100, "image": "", "location": "City Center", "description": "A brief description."}]}],"categories": [{"name": "Food & Drinks", "items": [{"name": "Item Name", "description": "Brief description (1-2 sentences)", "image": ""}]}, {"name": "Shopping", "items": [{"name": "Item Name", "description": "Brief description (1-2 sentences)", "image": ""}]}, {"name": "Local Tips", "items": [{"name": "Tip Name", "description": "Brief description (1-2 sentences)", "image": ""}]}, {"name": "Famous Activities", "items": [{"name": "Activity Name", "description": "Brief description (1-2 sentences)", "image": ""}]}, {"name": "Recommended Places", "items": [{"name": "Famous Place Name", "description": "Brief description of this real famous place in ${tripStore.destination} (1-2 sentences)", "suggestedTime": "09:00", "estimatedCost": 50, "image": ""}]}]}. Include exactly 5 real famous places in the Recommended Places category, such as major landmarks, attractions, or must-visit spots in ${tripStore.destination}. For each place, include a suggested visit time (HH:MM format) and estimated cost in THB. Do not add explanations or comments.`;
+
+      // Exclude existing recommended places from schedule
+      const recommendedCategory = tripStore.recommendedItems.categories?.find(cat => cat.name === "Recommended Places");
+      if (recommendedCategory && recommendedCategory.items.length > 0) {
+        const excludedPlaces = recommendedCategory.items.map(item => item.name).join(', ');
+        promptText += `\n\nDo not include any of these recommended places in the schedule activities: ${excludedPlaces}. Choose completely different activities and places that complement but do not overlap with the recommendations. Generate a diverse schedule with more unique places across multiple days.`;
+      }
+    }
+
+    if (isAlternative && !searchQuery && generateSchedule) {
+      const currentActivities = tripStore.tripDays.flatMap(day => day.activities.map((activity: any) => activity.name)).join(', ');
+      promptText = promptText.replace('Generate a travel schedule', 'Generate 5 alternative recommendations different from the current plan which includes these activities: ' + currentActivities + '. Focus only on the "Recommended Places" category with 5 new, different places.');
+      // Set generateSchedule to false for alternatives
+      generateSchedule = false;
+    }
 
     const prompt = {
       contents: [{ parts: [{ text: promptText }] }]
@@ -142,8 +163,8 @@ export function useAiTrip() {
         tripStore.setTripDays(updatedTripDays);
       }
 
-      // Handle both old and new recommendation formats
-      if (generatedData.recommendations || generatedData.categories) {
+      // Handle both old and new recommendation formats only if updateRecommendations is true
+      if (updateRecommendations && (generatedData.recommendations || generatedData.categories)) {
         if (generatedData.categories) {
           // New format with categories
           const allRecommendations = generatedData.categories.flatMap(category => category.items);
@@ -168,7 +189,7 @@ export function useAiTrip() {
           const recommendationImages = await Promise.all(
             generatedData.recommendations.map((rec, index) => fetchImage(rec.name, index * 300))
           );
-
+  
           // Convert to categorized format
           const categorizedRecommendations = {
             categories: [
@@ -212,12 +233,12 @@ export function useAiTrip() {
       
       if (generateSchedule && mockScheduleData.schedule) {
         await tripStore.saveTrip();
-
+  
         const allActivities = mockScheduleData.schedule.flatMap(day => day.activities);
         const images = await Promise.all(
           allActivities.map((activity, index) => fetchImage(activity.name, index * 500))
         );
-
+  
         let imageIndex = 0;
         const updatedTripDays = mockScheduleData.schedule.map(day => ({
           id: generateUniqueId(),
@@ -233,17 +254,19 @@ export function useAiTrip() {
             description: activity.description,
           })),
         }));
-
+  
         tripStore.setTripDays(updatedTripDays);
       }
-
-      // Use mock recommendations with categories
-      const mockRecommendations = getMockData('recommendations') as MockResponse;
-      const result = { 
-        categories: mockRecommendations.categories || [], 
-        isMock: true 
-      };
-      tripStore.setRecommendedItems(result);
+  
+      // Use mock recommendations with categories only if updateRecommendations
+      if (updateRecommendations) {
+        const mockRecommendations = getMockData('recommendations') as MockResponse;
+        const result = {
+          categories: mockRecommendations.categories || [],
+          isMock: true
+        };
+        tripStore.setRecommendedItems(result);
+      }
     } finally {
       isGenerating.value = false;
     }
@@ -254,7 +277,7 @@ export function useAiTrip() {
     
     try {
       // Use Gemini AI to generate search recommendations instead of Amadeus
-      const promptText = `Generate 5 specific recommendations for places in ${tripStore.destination} that match the search term "${query}". For each place, provide a name, a brief description (1-2 sentences), and leave the image field empty. Respond ONLY with valid JSON in the following format: {"categories": [{"name": "Search Results", "items": [{"name": "Place Name", "description": "A brief description", "image": ""}]}]}. Do not add explanations or comments.`;
+      const promptText = `Generate 5 specific real places in ${tripStore.destination} that match the search term "${query}". For each place, provide a name, a brief description (1-2 sentences), and leave the image field empty. Respond ONLY with valid JSON in the following format: {"categories": [{"name": "Search Results", "items": [{"name": "Famous Place Name", "description": "Brief description of this real place in ${tripStore.destination} (1-2 sentences)", "image": ""}]}]}. Do not add explanations or comments.`;
       
       const prompt = {
         contents: [{ parts: [{ text: promptText }] }]

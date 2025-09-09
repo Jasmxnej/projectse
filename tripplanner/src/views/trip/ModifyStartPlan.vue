@@ -168,15 +168,14 @@ const {
   selectCity,
 } = useStartPlanForm()
 
-// Override the submitForm function to check for returnToSummaryMyTrip flag
+
 const submitForm = async () => {
   await originalSubmitForm()
-  
-  // Check if we should return to SummaryMyTrip page
+
   if (localStorage.getItem('returnToSummaryMyTrip') === 'true') {
     const tripId = localStorage.getItem('summaryTripId')
     if (tripId) {
-      // Clear the return flags
+
       localStorage.removeItem('returnToSummaryMyTrip')
       localStorage.removeItem('summaryTripId')
       router.push({ name: 'summarypagemytrip', params: { tripId } })
@@ -184,10 +183,10 @@ const submitForm = async () => {
   }
 }
 
-// Initialize form data from route params if available
+
 onMounted(() => {
   if (route.params.tripId) {
-    // Form data will be initialized by useStartPlanForm
+
     console.log('Editing trip with ID:', route.params.tripId)
   }
 })

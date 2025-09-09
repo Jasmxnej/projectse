@@ -15,14 +15,20 @@
         :class="{ 'bg-teal-50 border-teal-200': item.added }"
       >
         <img
-          :src="item.image"
+          :src="item.image || item.cachedImageUrl || `https://via.placeholder.com/300x200/e5e7eb/6b7280?text=${encodeURIComponent(item.name)}`"
           :alt="item.name"
           class="w-16 h-16 rounded-lg object-cover"
-          @error="handleImageError($event, item.name)"
+          @error="handleImageError($event, item, item.category)"
+          @load="item.imageLoaded = true"
         />
         <div class="flex-1">
-          <h4 class="font-medium text-gray-800">{{ item.name }}</h4>
-          <p class="text-sm text-gray-600 line-clamp-2">{{ item.description }}</p>
+          <h4 class="font-medium text-gray-800 mb-1">
+            {{ item.name }}
+            <p class="text-sm text-gray-600 mt-1">{{ item.description }}.</p>
+            <span v-if="item.suggestedTime && item.estimatedCost" class="text-sm font-normal mt-1 block">
+              {{ item.suggestedTime }} {{ item.estimatedCost }} THB
+            </span>
+          </h4>
           <div class="flex items-center mt-1">
             <span v-if="item.category" class="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
               {{ item.category }}
@@ -71,15 +77,22 @@
 
 <script setup lang="ts">
 import { defineProps, defineEmits, computed } from 'vue';
+import axios from 'axios';
 
 interface Recommendation {
   id: number;
   image: string;
   name: string;
   description: string;
+  suggestedTime?: string;
+  estimatedCost?: number;
   category?: string;
   location?: string;
   added?: boolean;
+  cachedImageUrl?: string;
+  imageLoaded?: boolean;
+  imageErrorHandled?: boolean;
+  imageApiCalled?: boolean;
 }
 
 const props = defineProps({

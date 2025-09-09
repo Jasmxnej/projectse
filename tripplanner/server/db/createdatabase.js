@@ -3,12 +3,10 @@ const { db: dbConfig } = require('../config');
 
 let pool;
 
-/**
- * Initialize the database connection and create tables if they don't exist
- */
+
 async function initializeDatabase() {
   try {
-    // First create a connection without specifying a database
+   
     const initialConnection = await mysql.createConnection({
       host: dbConfig.host,
       port: dbConfig.port,
@@ -16,17 +14,14 @@ async function initializeDatabase() {
       password: dbConfig.password
     });
 
-    // Check if database exists, if not create it
     const dbName = dbConfig.database;
     console.log(`Checking if database '${dbName}' exists...`);
     
     await initialConnection.query(`CREATE DATABASE IF NOT EXISTS \`${dbName}\``);
     console.log(`Database '${dbName}' created or already exists.`);
     
-    // Close the initial connection
     await initialConnection.end();
     
-    // Now create the pool with the database specified
     if (!pool) {
       pool = mysql.createPool(dbConfig);
     }
@@ -35,10 +30,8 @@ async function initializeDatabase() {
     try {
       console.log('Database pool created and connection verified.');
       
-      // Create tables if they don't exist
       await createTablesIfNotExist(connection);
       
-      // Apply database modifications
       const { applyDatabaseModifications } = require('./modifydatabase');
       await applyDatabaseModifications(connection);
       
@@ -54,11 +47,9 @@ async function initializeDatabase() {
   }
 }
 
-/**
- * Create all database tables if they don't exist
- */
+
 async function createTablesIfNotExist(connection) {
-  // Create users table if it doesn't exist
+
   await connection.query(`
     CREATE TABLE IF NOT EXISTS users (
       id INT AUTO_INCREMENT PRIMARY KEY,
@@ -70,7 +61,6 @@ async function createTablesIfNotExist(connection) {
     );
   `);
   
-  // Create trips table if it doesn't exist
   await connection.query(`
     CREATE TABLE IF NOT EXISTS trips (
       id INT AUTO_INCREMENT PRIMARY KEY,
@@ -93,7 +83,6 @@ async function createTablesIfNotExist(connection) {
     );
   `);
   
-  // Create flights table if it doesn't exist
   await connection.query(`
     CREATE TABLE IF NOT EXISTS flights (
       id INT AUTO_INCREMENT PRIMARY KEY,
@@ -124,7 +113,6 @@ async function createTablesIfNotExist(connection) {
     );
   `);
   
-  // Create hotels table if it doesn't exist
   await connection.query(`
     CREATE TABLE IF NOT EXISTS hotels (
       id INT AUTO_INCREMENT PRIMARY KEY,
@@ -156,7 +144,6 @@ async function createTablesIfNotExist(connection) {
     );
   `);
   
-  // Create daily_schedules table if it doesn't exist
   await connection.query(`
     CREATE TABLE IF NOT EXISTS daily_schedules (
       id INT AUTO_INCREMENT PRIMARY KEY,
@@ -173,7 +160,6 @@ async function createTablesIfNotExist(connection) {
     );
   `);
   
-  // Create budgets table if it doesn't exist
   await connection.query(`
     CREATE TABLE IF NOT EXISTS budgets (
       id INT AUTO_INCREMENT PRIMARY KEY,
@@ -185,7 +171,6 @@ async function createTablesIfNotExist(connection) {
     );
   `);
   
-  // Create saved_trips table if it doesn't exist
   await connection.query(`
     CREATE TABLE IF NOT EXISTS saved_trips (
       id INT AUTO_INCREMENT PRIMARY KEY,
@@ -196,7 +181,6 @@ async function createTablesIfNotExist(connection) {
     );
   `);
   
-  // Create trip_packing_lists table if it doesn't exist
   await connection.query(`
     CREATE TABLE IF NOT EXISTS trip_packing_lists (
       id INT AUTO_INCREMENT PRIMARY KEY,
@@ -208,7 +192,6 @@ async function createTablesIfNotExist(connection) {
     );
   `);
   
-  // Create weather table if it doesn't exist
   await connection.query(`
     CREATE TABLE IF NOT EXISTS weather (
       id INT AUTO_INCREMENT PRIMARY KEY,
@@ -229,7 +212,6 @@ async function createTablesIfNotExist(connection) {
     );
   `);
   
-  // Create local_recommendations table if it doesn't exist
   await connection.query(`
     CREATE TABLE IF NOT EXISTS local_recommendations (
       id INT AUTO_INCREMENT PRIMARY KEY,
@@ -255,9 +237,6 @@ async function createTablesIfNotExist(connection) {
   console.log('Database tables created if they didn\'t exist.');
 }
 
-/**
- * Get the database connection pool
- */
 function getPool() {
   if (!pool) {
     throw new Error('Database pool not initialized. Call initializeDatabase() first.');

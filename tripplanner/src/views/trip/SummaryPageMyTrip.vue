@@ -1,6 +1,6 @@
 <template>
   <div class="bg-gray-50 min-h-screen font-sans text-gray-800">
-    <main class="p-4 lg:p-8" ref="summaryContent">
+    <main class="p-4 lg:p-8 summary-content" ref="summaryContent">
       <div class="max-w-7xl mx-auto">
         <div class="flex justify-between items-center mb-8">
           <div class="flex items-center">
@@ -43,10 +43,10 @@
               :flights="flights"
               :hotel="hotel"
               :schedule="schedule"
-              :weatherData="weatherData"
-              :packingData="packingData"
-              :recommendationsData="recommendationsData"
-              :budgetData="budgetData"
+              :weather-data="weatherData"
+              :packing-data="packingData"
+              :recommendations-data="recommendationsData"
+              :budget-data="budgetData"
             />
           </div>
         </div>
@@ -188,7 +188,7 @@
             <div v-if="selectedView === 'flight'">
               <div v-if="!flights || flights.length === 0 || (flights.length > 0 && flights.some(f => !f.airline || f.airline === 'Unknown Airline'))" class="text-center py-8 text-gray-500">
                 <p class="text-lg">You haven't selected a flight yet.</p>
-                <p class="text-sm mt-2">Click "Modify Trip" to add flight details.</p>
+               
               </div>
               <FlightDetailsCard v-else :flights="flights" @edit="editFlight" />
             </div>
@@ -197,7 +197,7 @@
             <div v-else-if="selectedView === 'hotel'">
               <div v-if="!hotel || hotel.name === 'Skipped'" class="text-center py-8 text-gray-500">
                 <p class="text-lg">You haven't selected a hotel yet.</p>
-                <p class="text-sm mt-2">Click "Modify Trip" to add hotel details.</p>
+          
               </div>
               <HotelDetailsCard v-else :hotel="hotel" :destination="trip?.destination" @edit="editHotel" />
             </div>
@@ -276,6 +276,8 @@ import TripPackingList from '@/components/trip/TripPackingList.vue';
 import TripLocalRecommendations from '@/components/trip/TripLocalRecommendations.vue';
 import TripBudgetAnalysis from '@/components/trip/TripBudgetAnalysis.vue';
 import TravelPlugInfo from '@/components/trip/TravelPlugInfo.vue';
+import html2canvas from 'html2canvas';
+import jsPDF from 'jspdf';
 
 const route = useRoute();
 const router = useRouter();
@@ -304,6 +306,55 @@ const budgetData = ref<any>(null);
 // Trip name editing
 const isEditingName = ref(false);
 const tripName = ref('');
+
+// PDF screenshot function
+const generatePdfScreenshot = async () => {
+  if (!summaryContent.value) {
+    alert('Content not ready for capture');
+    return;
+  }
+
+  try {
+    // Wait for all content to load
+    await new Promise(resolve => setTimeout(resolve, 1000));
+
+    const canvas = await html2canvas(summaryContent.value, {
+      scale: 1.5,
+      useCORS: true,
+      allowTaint: true,
+      letterRendering: true,
+      useOverflow: true,
+      backgroundColor: '#f9fafb',
+      width: summaryContent.value.scrollWidth,
+      height: summaryContent.value.scrollHeight,
+      windowWidth: summaryContent.value.scrollWidth,
+      windowHeight: summaryContent.value.scrollHeight
+    });
+
+    const imgData = canvas.toDataURL('image/png');
+    const pdf = new jsPDF('p', 'mm', 'a4');
+    const imgWidth = 210;
+    const pageHeight = 295;
+    const imgHeight = (canvas.height * imgWidth) / canvas.width;
+    let heightLeft = imgHeight;
+    let position = 0;
+
+    pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+    heightLeft -= pageHeight;
+
+    while (heightLeft >= 0) {
+      position = heightLeft - imgHeight;
+      pdf.addPage();
+      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+      heightLeft -= pageHeight;
+    }
+
+    pdf.save(`${trip.value?.name || 'Trip Summary'}.pdf`);
+  } catch (error) {
+    console.error('Error generating PDF screenshot:', error);
+    alert('Failed to generate PDF. Please try again.');
+  }
+};
 
 const selectedView = ref('flight');
 
@@ -716,17 +767,17 @@ const saveTrip = async () => {
     startEditName();
     return;
   }
-  
+
   try {
     // Get user ID from auth store or use default
     const userId = authStore.user?.id || 1;
-    
+
     // Check if this is a new trip or existing trip
     const isNewTrip = !trip.value?.id || trip.value.id.toString().includes('mock') || trip.value.id === 'new';
     let tripId = trip.value?.id || route.params.tripId || 'new-trip-' + Date.now();
-    
+
     console.log('Saving trip with ID:', tripId, 'isNewTrip:', isNewTrip);
-    
+
     // Save all trip data to database
     try {
       // For new trips, create it first
@@ -747,7 +798,7 @@ const saveTrip = async () => {
             other_activity: trip.value?.other_activity || '',
             special_needs: trip.value?.special_needs || ''
           });
-          
+
           // Update tripId with the newly created ID
           if (createResponse.data && createResponse.data.id) {
             console.log('Created new trip with ID:', createResponse.data.id);
@@ -759,11 +810,33 @@ const saveTrip = async () => {
           console.error('Error creating new trip:', createError);
           // Continue with the temporary ID
         }
+      } else {
+        // For existing trips, update the trips table
+        try {
+          console.log('Updating existing trip...');
+          await axios.put(`http://localhost:3002/api/trips/${tripId}`, {
+            name: trip.value.name,
+            destination: trip.value?.destination || 'Unknown',
+            destination_iata_code: trip.value?.destination_iata_code || '',
+            start_date: trip.value?.start_date || new Date().toISOString().split('T')[0],
+            end_date: trip.value?.end_date || new Date(Date.now() + 7*24*60*60*1000).toISOString().split('T')[0],
+            budget: trip.value?.budget || 0,
+            group_size: trip.value?.group_size || 1,
+            transport: trip.value?.transport || 'Flight',
+            activities: trip.value?.activities || [],
+            other_activity: trip.value?.other_activity || '',
+            special_needs: trip.value?.special_needs || ''
+          });
+          console.log('Updated existing trip successfully');
+        } catch (updateError) {
+          console.error('Error updating existing trip:', updateError);
+          // Continue with saving to saved_trips table
+        }
       }
-      
-      // Save trip details and other data
+
+      // Save trip details and other data (this saves to saved_trips table)
       await saveTripDetails(tripId);
-      
+
     } catch (apiError) {
       console.error('Error saving trip to API:', apiError);
       // Save locally if API fails
@@ -774,13 +847,16 @@ const saveTrip = async () => {
         localStorage.setItem(`trip-${tripId}-flights`, JSON.stringify(flights.value));
         localStorage.setItem(`trip-${tripId}-hotel`, JSON.stringify(hotel.value));
         localStorage.setItem(`trip-${tripId}-schedule`, JSON.stringify(schedule.value));
-        
+
         alert(`Server connection failed. Trip "${trip.value.name}" saved locally.`);
       }
     }
   } catch (error) {
     console.error('Error in save trip process:', error);
     alert('Failed to save trip. Please try again.');
+  } finally {
+    // Refresh the trip data after save to update the screen
+    await fetchTripSummary();
   }
 };
 
@@ -861,7 +937,7 @@ const saveTripName = async () => {
   try {
     const tripId = trip.value?.id || route.params.tripId;
     if (tripId) {
-      await axios.post(`http://localhost:3002/api/trips/${tripId}/name`, { name: tripName.value });
+      await axios.put(`http://localhost:3002/api/trips/${tripId}/name`, { name: tripName.value });
       if (trip.value) {
         trip.value.name = tripName.value;
       }
