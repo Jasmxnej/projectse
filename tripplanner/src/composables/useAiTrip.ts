@@ -93,6 +93,49 @@ export function useAiTrip() {
     isMockData.value = false;
     errorMessage.value = '';
 
+    // Fetch complete trip data from database if generating schedule
+    let tripData = null;
+    let flightDetails = '';
+    let hotelDetails = '';
+    let userActivities = tripStore.activities.join(', ');
+    let specialNeeds = '';
+
+    if (generateSchedule) {
+      try {
+        const response = await axios.get(`http://localhost:3002/api/trips/by-id/${tripStore.tripId}`);
+        tripData = response.data;
+
+        // Extract flight details if available
+        if (tripData.flight && tripData.flight.arrival && tripData.flight.departure) {
+          const arrivalTime = tripData.flight.arrival.time || '09:00';
+          const departureTime = tripData.flight.departure.time || '18:00';
+          const arrivalAirport = tripData.flight.arrival.airport || `${tripStore.destination} Airport`;
+          const departureAirport = tripData.flight.departure.airport || `${tripStore.destination} Airport`;
+          flightDetails = `Flight arrives at ${arrivalAirport} on Day 1 at ${arrivalTime}. Flight departs from ${departureAirport} on the last day at ${departureTime}.`;
+        }
+
+        // Extract hotel details if available
+        if (tripData.hotel) {
+          const hotelLocation = tripData.hotel.location || tripStore.destination;
+          const checkInTime = tripData.hotel.check_in_time || '15:00';
+          const checkOutTime = tripData.hotel.check_out_time || '12:00';
+          hotelDetails = `Hotel is located in ${hotelLocation}. Check-in at ${checkInTime} on Day 1, check-out at ${checkOutTime} on the last day. Base all activities around this hotel location.`;
+        }
+
+        // Update user activities and special needs from database
+        if (tripData.activities) {
+          userActivities = Array.isArray(tripData.activities) ? tripData.activities.join(', ') : tripData.activities;
+        }
+        if (tripData.special_needs) {
+          specialNeeds = `Special needs/requirements: ${tripData.special_needs}.`;
+        }
+
+      } catch (error) {
+        console.error('Error fetching trip data:', error);
+        // Fallback to store data
+      }
+    }
+
     let promptText;
     if (searchQuery) {
       promptText = `Generate recommendations for ${searchQuery} in ${tripStore.destination}. Respond ONLY with valid JSON in the following format: {"categories": [{"name": "Food", "items": [{"name": "Place Name", "description": "A brief description", "image": ""}]}, {"name": "Shopping", "items": [{"name": "Place Name", "description": "A brief description", "image": ""}]}, {"name": "Culture", "items": [{"name": "Place Name", "description": "A brief description", "image": ""}]}, {"name": "Entertainment", "items": [{"name": "Place Name", "description": "A brief description", "image": ""}]}]}. Do not add explanations or comments.`;
@@ -100,13 +143,23 @@ export function useAiTrip() {
       // Only generate recommendations/categories
       promptText = `Generate travel recommendations for ${tripStore.destination}. Respond ONLY with valid JSON in the following format: {"categories": [{"name": "Food & Drinks", "items": [{"name": "Item Name", "description": "Brief description (1-2 sentences)", "image": ""}]}, {"name": "Shopping", "items": [{"name": "Item Name", "description": "Brief description (1-2 sentences)", "image": ""}]}, {"name": "Local Tips", "items": [{"name": "Tip Name", "description": "Brief description (1-2 sentences)", "image": ""}]}, {"name": "Famous Activities", "items": [{"name": "Activity Name", "description": "Brief description (1-2 sentences)", "image": ""}]}, {"name": "Recommended Places", "items": [{"name": "Famous Place Name", "description": "Brief description of this real famous place in ${tripStore.destination} (1-2 sentences)", "suggestedTime": "09:00", "estimatedCost": 50, "image": ""}]}]}. Include exactly 5 real famous places in the Recommended Places category, such as major landmarks, attractions, or must-visit spots in ${tripStore.destination}. For each place, include a suggested visit time (HH:MM format) and estimated cost in THB. Do not include schedule. Do not add explanations or comments.`;
     } else {
-      // Full prompt for schedule and recommendations
-      promptText = `Generate a travel schedule for a trip to ${tripStore.destination} from ${tripStore.startDate} to ${tripStore.endDate} for ${tripStore.groupSize} people with a budget of ${tripStore.budget} and interests in ${tripStore.activities.join(', ')}. Respond ONLY with valid JSON in the following format: {"schedule": [{"day": 1, "activities": [{"name": "Place Name", "time": "09:00", "cost": 100, "image": "", "location": "City Center", "description": "A brief description."}]}],"categories": [{"name": "Food & Drinks", "items": [{"name": "Item Name", "description": "Brief description (1-2 sentences)", "image": ""}]}, {"name": "Shopping", "items": [{"name": "Item Name", "description": "Brief description (1-2 sentences)", "image": ""}]}, {"name": "Local Tips", "items": [{"name": "Tip Name", "description": "Brief description (1-2 sentences)", "image": ""}]}, {"name": "Famous Activities", "items": [{"name": "Activity Name", "description": "Brief description (1-2 sentences)", "image": ""}]}, {"name": "Recommended Places", "items": [{"name": "Famous Place Name", "description": "Brief description of this real famous place in ${tripStore.destination} (1-2 sentences)", "suggestedTime": "09:00", "estimatedCost": 50, "image": ""}]}]}. Include exactly 5 real famous places in the Recommended Places category, such as major landmarks, attractions, or must-visit spots in ${tripStore.destination}. For each place, include a suggested visit time (HH:MM format) and estimated cost in THB. Do not add explanations or comments.`;
+      // Enhanced prompt for schedule with time slots, flight/hotel integration, user preferences
+      promptText = `Generate a detailed daily travel schedule for a trip to ${tripStore.destination} from ${tripStore.startDate} to ${tripStore.endDate} for ${tripStore.groupSize} people with a total budget of ${tripStore.budget} THB. User interests/activities: ${userActivities}. ${specialNeeds} ${flightDetails} ${hotelDetails}
+
+Structure the schedule across all trip days with activities in specific time slots:
+- Morning: 08:00-12:00 (sightseeing, cultural visits)
+- Lunch: 12:00-14:00 (meals, rest)
+- Evening: 14:00-18:00 (shopping, light activities)
+- Night: 18:00+ (dinner, nightlife, relaxation)
+
+Start Day 1 with airport arrival and transfer to hotel. End the last day with activities until departure time, then airport transfer. Base all activities around the hotel location. Ensure activities align with user interests and special needs. Generate diverse, unique places different from any recommendations.
+
+Respond ONLY with valid JSON in the following format: {"schedule": [{"day": 1, "activities": [{"name": "Activity Name", "time": "HH:MM", "cost": 100, "image": "", "location": "Specific Location", "description": "Brief description."}]}, ... ]}. Do not include categories or recommendations. Do not add explanations or comments.`;
 
       // Exclude existing recommended places from schedule
       const recommendedCategory = tripStore.recommendedItems.categories?.find(cat => cat.name === "Recommended Places");
-      if (recommendedCategory && recommendedCategory.items.length > 0) {
-        const excludedPlaces = recommendedCategory.items.map(item => item.name).join(', ');
+      if (recommendedCategory && recommendedCategory.items && recommendedCategory.items.length > 0) {
+        const excludedPlaces = recommendedCategory.items.map((item: { name: string }) => item.name).join(', ');
         promptText += `\n\nDo not include any of these recommended places in the schedule activities: ${excludedPlaces}. Choose completely different activities and places that complement but do not overlap with the recommendations. Generate a diverse schedule with more unique places across multiple days.`;
       }
     }

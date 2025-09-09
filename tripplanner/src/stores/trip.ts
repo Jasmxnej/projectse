@@ -185,9 +185,11 @@ export const useTripStore = defineStore('trip', {
           return total + price;
         }, 0);
         this.flights = enhancedFlights;
+        this.setFlightCost(this.flightCost);
       } else {
         this.flightCost = 0;
         this.flights = [];
+        this.setFlightCost(0);
       }
       
       // Enhanced hotel data handling - preserve all database fields
@@ -219,11 +221,28 @@ export const useTripStore = defineStore('trip', {
           contact_phone: hotel.contact_phone || '',
           contact_email: hotel.contact_email || ''
         };
-        this.hotelCost = enhancedHotel.price;
+        // Parse hotel price similar to flight
+        let hotelPrice = 0;
+        if (typeof enhancedHotel.price === 'number') {
+          hotelPrice = enhancedHotel.price;
+        } else if (typeof enhancedHotel.price === 'string') {
+          hotelPrice = parseFloat(enhancedHotel.price) || 0;
+        } else if (enhancedHotel.price && typeof enhancedHotel.price === 'object') {
+          if (enhancedHotel.price.total) {
+            hotelPrice = parseFloat(enhancedHotel.price.total) || 0;
+          } else if (enhancedHotel.price.grandTotal) {
+            hotelPrice = parseFloat(enhancedHotel.price.grandTotal) || 0;
+          } else if (enhancedHotel.price.base) {
+            hotelPrice = parseFloat(enhancedHotel.price.base) || 0;
+          }
+        }
+        this.hotelCost = hotelPrice;
         this.hotel = enhancedHotel;
+        this.setHotelCost(this.hotelCost);
       } else {
         this.hotelCost = 0;
         this.hotel = null;
+        this.setHotelCost(0);
       }
       
       // Enhanced schedule data handling
@@ -234,6 +253,15 @@ export const useTripStore = defineStore('trip', {
         name: day.day_name || day.name || `Day ${day.day || day.dayNumber}`,
         activities: typeof day.activities === 'string' ? JSON.parse(day.activities) : (day.activities || [])
       })) || [];
+      
+      // Calculate total activities cost from schedule
+      let totalPlanCost = 0;
+      for (const day of this.tripDays) {
+        for (const activity of day.activities) {
+          totalPlanCost += parseFloat(activity.cost) || 0;
+        }
+      }
+      this.setPlanCost(totalPlanCost);
       
       this.updateTotalPlannedExpenses();
     },

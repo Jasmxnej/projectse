@@ -334,6 +334,31 @@ export function useFlightSearch() {
         }
       }
       
+      // Sync saved trips to latest and update to latest trip ID if changed
+      try {
+        const authStore = useAuthStore();
+        const userId = authStore.user?.id || 1;
+        await axios.post(`http://localhost:3002/api/trips/sync-saved/${userId}`);
+        
+        const tripName = tripStore.tripName;
+        if (tripName) {
+          const latestResponse = await axios.get(`http://localhost:3002/api/trips/latest-trip/${userId}/${tripName}`);
+          if (latestResponse.data.tripId && latestResponse.data.tripId !== tripStore.tripId) {
+            const newTripId = latestResponse.data.tripId;
+            tripStore.tripId = newTripId;
+            localStorage.setItem('summaryTripId', newTripId.toString());
+            
+            // Push with new ID if returning to summary
+            if (localStorage.getItem('returnToSummaryMyTrip') === 'true') {
+              router.push({ name: 'summarypagemytrip', params: { tripId: newTripId } });
+              return;
+            }
+          }
+        }
+      } catch (syncError) {
+        console.error('Error syncing saved trips:', syncError);
+      }
+      
       router.push({ name: 'hotel', params: { tripId: tripStore.tripId } });
       return;
     }
@@ -378,8 +403,33 @@ export function useFlightSearch() {
         };
       });
 
-      await api.saveFlights(String(tripStore.tripId), flightsForBackend, flightDictionaries.value, tripType.value);
+      const saveResponse = await api.saveFlights(String(tripStore.tripId), flightsForBackend, flightDictionaries.value, tripType.value);
       await api.updateBudget(String(tripStore.tripId), tripStore.budget);
+      
+      // Sync saved trips to latest and update to latest trip ID if changed
+      try {
+        const authStore = useAuthStore();
+        const userId = authStore.user?.id || 1;
+        await axios.post(`http://localhost:3002/api/trips/sync-saved/${userId}`);
+        
+        const tripName = tripStore.tripName;
+        if (tripName) {
+          const latestResponse = await axios.get(`http://localhost:3002/api/trips/latest-trip/${userId}/${tripName}`);
+          if (latestResponse.data.tripId && latestResponse.data.tripId !== tripStore.tripId) {
+            const newTripId = latestResponse.data.tripId;
+            tripStore.tripId = newTripId;
+            localStorage.setItem('summaryTripId', newTripId.toString());
+            
+            // Push with new ID if returning to summary
+            if (localStorage.getItem('returnToSummaryMyTrip') === 'true') {
+              router.push({ name: 'summarypagemytrip', params: { tripId: newTripId } });
+              return;
+            }
+          }
+        }
+      } catch (syncError) {
+        console.error('Error syncing saved trips:', syncError);
+      }
       
       // Check if we should return to SummaryMyTrip page
       if (localStorage.getItem('returnToSummaryMyTrip') === 'true') {

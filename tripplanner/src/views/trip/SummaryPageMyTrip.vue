@@ -231,6 +231,7 @@
 
             <!-- Packing List Tab -->
             <div v-else-if="selectedView === 'packing'">
+              <TravelPlugInfo :destination="trip.destination" />
               <TripPackingList
                 ref="packingComponent"
                 :trip-id="trip.id"
@@ -248,14 +249,133 @@
               />
             </div>
             
-            <!-- Travel Adapter Information -->
-            <div v-else-if="selectedView === 'adapter'">
-              <TravelPlugInfo :destination="trip.destination" />
-            </div>
+          
           </div>
         </div>
       </div>
     </main>
+  </div>
+
+  <!-- Hidden full content for PDF generation -->
+  <div ref="fullPdfContent" class="hidden overflow-visible" style="position: absolute; left: -9999px; top: 0; width: 800px; background: white; padding: 20px;">
+    <div class="space-y-12 max-w-4xl mx-auto">
+      
+      <!-- Trip Overview Section for PDF -->
+      <div class="bg-white rounded-xl shadow-lg p-6">
+        <h2 class="text-2xl font-bold text-gray-800 mb-4">Trip Overview</h2>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <!-- Trip Details -->
+          <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
+            <h3 class="text-lg font-semibold text-gray-800 mb-2">Trip Details</h3>
+            <div class="space-y-2 text-sm">
+              <p><span class="font-medium">Destination:</span> {{ trip?.destination }}</p>
+              <p><span class="font-medium">Dates:</span> {{ formatDate(trip?.start_date) }} to {{ formatDate(trip?.end_date) }}</p>
+              <p><span class="font-medium">Group Size:</span> {{ trip?.group_size || 1 }} people</p>
+              <p><span class="font-medium">Transport:</span> {{ trip?.transport || 'Not specified' }}</p>
+            </div>
+          </div>
+          
+          <!-- Flight Summary for PDF -->
+          <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
+            <h3 class="text-lg font-semibold text-gray-800 mb-2">Flights</h3>
+            <div v-if="flights && flights.length > 0 && flights.some(f => f.airline && f.airline !== 'Unknown Airline')" class="space-y-3 text-sm">
+              <div v-for="(flight, index) in flights" :key="flight.id || index" class="border-l-4 border-teal-500 pl-3">
+                <p><span class="font-medium">Route:</span> {{ flight.from_city || flight.fromCity || '?' }} ({{ flight.from_iata || flight.fromIata || '?' }}) → {{ flight.to_city || flight.toCity || '?' }} ({{ flight.to_iata || flight.toIata || '?' }})</p>
+                <p><span class="font-medium">Airline:</span> {{ flight.airline || 'Unknown Airline' }}</p>
+                <p><span class="font-medium">Departure:</span> {{ formatDateTime(flight.departure_time || flight.departureTime) }}</p>
+                <p><span class="font-medium">Arrival:</span> {{ formatDateTime(flight.arrival_time || flight.arrivalTime) }}</p>
+                <p><span class="font-medium">Price:</span> {{ formatPrice(flight.price) }}</p>
+              </div>
+              <div class="mt-3 pt-3 border-t border-gray-300">
+                <p class="text-xs text-gray-600">
+                  <span class="font-medium">Total Price:</span> {{ formatPrice(getTotalFlightPrice()) }}
+                </p>
+              </div>
+            </div>
+            <div v-else class="text-sm text-gray-500 italic">
+              <p>No flight details available.</p>
+            </div>
+          </div>
+          
+          <!-- Hotel Summary for PDF -->
+          <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
+            <h3 class="text-lg font-semibold text-gray-800 mb-2">Hotel</h3>
+            <div v-if="hotel && hotel.name !== 'Skipped'" class="space-y-2 text-sm">
+              <p><span class="font-medium">Name:</span> {{ hotel.name || 'Hotel in ' + (trip?.destination || 'destination') }}</p>
+              <p><span class="font-medium">Location:</span> {{ hotel.location || hotel.cityCode || hotel.city_code || trip?.destination || 'Unknown' }}</p>
+              <p><span class="font-medium">Rating:</span>
+                <span class="inline-flex items-center">
+                  <span v-for="i in Math.floor(hotel.rating || 0)" :key="i" class="text-yellow-400">★</span>
+                  <span v-for="i in (5 - Math.floor(hotel.rating || 0))" :key="i + 5" class="text-gray-300">★</span>
+                  <span class="ml-1">{{ hotel.rating || 3 }}/5</span>
+                </span>
+              </p>
+              <p><span class="font-medium">Check-in:</span> {{ formatDate(hotel.check_in_date || hotel.checkInDate) }}</p>
+              <p><span class="font-medium">Check-out:</span> {{ formatDate(hotel.check_out_date || hotel.checkOutDate) }}</p>
+              <p><span class="font-medium">Price:</span> {{ formatPrice(hotel.price) }}</p>
+            </div>
+            <div v-else class="text-sm text-gray-500 italic">
+              <p>No hotel details available.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Budget Overview for PDF -->
+      <div class="bg-white rounded-xl shadow-lg p-6">
+        <h2 class="text-2xl font-bold text-gray-800 mb-4">Budget Overview</h2>
+        <BudgetCard :initial-budget="trip?.budget" :planned-expenses="plannedExpenses" />
+      </div>
+      
+      <!-- Flight Details Section for PDF -->
+      <div class="bg-white rounded-xl shadow-lg p-6">
+        <h2 class="text-2xl font-bold text-gray-800 mb-4">Flight Details</h2>
+        <FlightDetailsCard v-if="flights && flights.length > 0" :flights="flights" />
+        <div v-else class="text-center py-8 text-gray-500">
+          <p class="text-lg">No flight details available.</p>
+        </div>
+      </div>
+      
+      <!-- Hotel Details Section for PDF -->
+      <div class="bg-white rounded-xl shadow-lg p-6">
+        <h2 class="text-2xl font-bold text-gray-800 mb-4">Hotel Details</h2>
+        <HotelDetailsCard v-if="hotel" :hotel="hotel" :destination="trip?.destination" />
+        <div v-else class="text-center py-8 text-gray-500">
+          <p class="text-lg">No hotel details available.</p>
+        </div>
+      </div>
+      
+      <!-- Daily Schedule Section for PDF -->
+      <div class="bg-white rounded-xl shadow-lg p-6">
+        <h2 class="text-2xl font-bold text-gray-800 mb-4">Daily Schedule</h2>
+        <DailyScheduleCard :schedule="schedule" :destination="trip?.destination" />
+      </div>
+      
+      <!-- Weather Forecast Section for PDF -->
+      <div class="bg-white rounded-xl shadow-lg p-6">
+        <h2 class="text-2xl font-bold text-gray-800 mb-4">Weather Forecast</h2>
+        <TripWeatherForecast
+          :destination="trip?.destination"
+          :start-date="trip?.start_date"
+          :end-date="trip?.end_date"
+          :use-saved-data="true"
+        />
+      </div>
+      
+      <!-- Packing List Section for PDF -->
+      <div class="bg-white rounded-xl shadow-lg p-6">
+        <h2 class="text-2xl font-bold text-gray-800 mb-4">Packing List</h2>
+        <TripPackingList :trip-id="trip?.id" />
+      </div>
+      
+      <!-- Local Recommendations Section for PDF -->
+      <div class="bg-white rounded-xl shadow-lg p-6">
+        <h2 class="text-2xl font-bold text-gray-800 mb-4">Local Recommendations</h2>
+        <TripLocalRecommendations :destination="trip?.destination" :use-saved-data="true" />
+      </div>
+      
+    
+    </div>
   </div>
 </template>
 
@@ -368,15 +488,15 @@ const hasData = (section: string): boolean => {
     case 'daily':
       return !!schedule.value && schedule.value.length > 0;
     case 'budget':
-      return true; // Budget is always available
+      return true; 
     case 'weather':
-      return !!trip.value?.destination; // Weather is available if destination is set
+      return !!trip.value?.destination; 
     case 'packing':
-      return true; // Packing list is always available
+      return true; 
     case 'recommendations':
-      return !!trip.value?.destination; // Recommendations are available if destination is set
+      return !!trip.value?.destination; 
     case 'adapter':
-      return !!trip.value?.destination; // Travel adapter info is available if destination is set
+      return !!trip.value?.destination; 
     default:
       return false;
   }
@@ -429,7 +549,7 @@ const formatPrice = (price: number | string | undefined): string => {
 // Watch for changes to selectedView to auto-generate content when needed
 watch(selectedView, (newView) => {
   if (newView === 'recommendations' && !trip.value?.recommendations) {
-    // Recommendations will be loaded by the component
+   
   }
 });
 
@@ -441,7 +561,6 @@ const viewOptions = [
   { label: 'Weather', value: 'weather' },
   { label: 'Packing', value: 'packing' },
   { label: 'Recommendations', value: 'recommendations' },
-  { label: 'Travel Adapter', value: 'adapter' },
 ];
 
 const fetchTripSummary = async () => {
@@ -484,12 +603,12 @@ const fetchTripSummary = async () => {
           id: flightData.id || Date.now(),
           leg_number: flightData.leg_number || 1,
           flight_type: flightData.flight_type || 'one-way',
-          airline: 'Unknown Airline', // Will be determined below
+          airline: 'Unknown Airline', 
           flight_number: flightData.flight_number || '',
           from_city: flightData.from_city || flightData.fromCity || 'Unknown Origin',
           to_city: flightData.to_city || flightData.toCity || 'Unknown Destination',
-          from_iata: flightData.from_iata || flightData.fromIata || 'N/A',
-          to_iata: flightData.to_iata || flightData.toIata || 'N/A',
+          // from_iata: flightData.from_iata || flightData.fromIata ,
+          // to_iata: flightData.to_iata || flightData.toIata ,
           departure_date: flightData.departure_date || flightData.departureDate || new Date().toISOString(),
           departure_time: flightData.departure_time || flightData.departureTime || flightData.departure || null,
           arrival_date: flightData.arrival_date || flightData.arrivalDate || new Date().toISOString(),
@@ -855,6 +974,26 @@ const saveTrip = async () => {
     console.error('Error in save trip process:', error);
     alert('Failed to save trip. Please try again.');
   } finally {
+    // Sync saved trips to latest and update to latest trip ID if changed
+    try {
+      const userId = authStore.user?.id || 1;
+      await axios.post(`http://localhost:3002/api/trips/sync-saved/${userId}`);
+      
+      if (trip.value && trip.value.name) {
+        const latestResponse = await axios.get(`http://localhost:3002/api/trips/latest-trip/${userId}/${trip.value.name}`);
+        if (latestResponse.data.tripId && latestResponse.data.tripId !== trip.value.id) {
+          const newTripId = latestResponse.data.tripId;
+          trip.value.id = newTripId;
+          tripStore.tripId = newTripId;
+          // Refresh with new ID
+          await fetchTripSummary();
+          return; // Exit early since we refetched
+        }
+      }
+    } catch (syncError) {
+      console.error('Error syncing saved trips:', syncError);
+    }
+    
     // Refresh the trip data after save to update the screen
     await fetchTripSummary();
   }
@@ -950,6 +1089,25 @@ const saveTripName = async () => {
       
       // Auto-save all changes to database
       await autoSaveChanges();
+      
+      // Sync saved trips to latest and update to latest trip ID if changed
+      try {
+        const userId = authStore.user?.id || 1;
+        await axios.post(`http://localhost:3002/api/trips/sync-saved/${userId}`);
+        
+        if (trip.value && trip.value.name) {
+          const latestResponse = await axios.get(`http://localhost:3002/api/trips/latest-trip/${userId}/${tripName.value}`);
+          if (latestResponse.data.tripId && latestResponse.data.tripId !== trip.value.id) {
+            const newTripId = latestResponse.data.tripId;
+            trip.value.id = newTripId;
+            tripStore.tripId = newTripId;
+            await fetchTripSummary();
+            return;
+          }
+        }
+      } catch (syncError) {
+        console.error('Error syncing saved trips:', syncError);
+      }
     }
   } catch (error) {
     console.error('Error updating trip name:', error);

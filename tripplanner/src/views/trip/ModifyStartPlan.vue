@@ -170,16 +170,17 @@ const {
 
 
 const submitForm = async () => {
-  await originalSubmitForm()
-
+  const tripIdFromRoute = route.params.tripId as string;
+  const updatedTripId = await originalSubmitForm(tripIdFromRoute);
+ 
   if (localStorage.getItem('returnToSummaryMyTrip') === 'true') {
-    const tripId = localStorage.getItem('summaryTripId')
-    if (tripId) {
-
-      localStorage.removeItem('returnToSummaryMyTrip')
-      localStorage.removeItem('summaryTripId')
-      router.push({ name: 'summarypagemytrip', params: { tripId } })
+    const storedTripId = localStorage.getItem('summaryTripId');
+    if (storedTripId && updatedTripId) {
+      // Update localStorage with the (same or new) trip ID
+      localStorage.setItem('summaryTripId', updatedTripId);
     }
+    localStorage.removeItem('returnToSummaryMyTrip');
+    router.push({ name: 'summarypagemytrip', params: { tripId: updatedTripId || storedTripId } });
   }
 }
 

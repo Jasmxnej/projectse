@@ -189,6 +189,7 @@ import TripLocalRecommendations from '@/components/trip/TripLocalRecommendations
 import TripBudgetAnalysis from '@/components/trip/TripBudgetAnalysis.vue';
 import FlightDetailsCard from '@/components/trip/FlightDetailsCard.vue';
 import HotelDetailsCard from '@/components/trip/HotelDetailsCard.vue';
+import TravelPlugInfo from '@/components/trip/TravelPlugInfo.vue';
 
 const route = useRoute();
 const router = useRouter();

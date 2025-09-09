@@ -180,7 +180,7 @@ const loadImageFromUnsplash = async (item: any, categoryName: string) => {
   } else if (categoryName.includes('Shopping')) {
     searchTerms = `${itemName} ${destination} souvenir market`;
   } else if (categoryName.includes('Tips')) {
-    searchTerms = `${destination} culture tradition local`;
+    searchTerms = `${itemName} ${destination} culture tradition local tip`;
   } else if (categoryName.includes('Activities')) {
     searchTerms = `${itemName} ${destination} activity tourism`;
   } else {
@@ -502,7 +502,7 @@ const handleRecommendationImageError = async (e: Event, item: any, categoryName:
 
     // Try to get a new image from Unsplash API with generic search
     try {
-      const searchTerms = `${destination} travel`;
+      const searchTerms = `${itemName} ${destination} travel activity`;
       const response = await axios.get(`http://localhost:3002/api/unsplash/image?place=${encodeURIComponent(searchTerms)}&type=attraction`);
       const imageUrl = response.data.image;
 

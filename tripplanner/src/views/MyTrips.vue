@@ -165,7 +165,7 @@ const totalDays = computed(() => {
 });
 
 const totalBudget = computed(() => {
-  return trips.value.reduce((total, trip) => total + trip.budget, 0);
+  return trips.value.reduce((sum, trip) => sum + Number(trip.budget || 0), 0);
 });
 
 const formatNumber = (value: number) => {

@@ -276,22 +276,41 @@ router.put('/:tripId', async (req, res) => {
   } = req.body;
   try {
     const pool = getPool();
-    
-    // Format dates properly for MySQL
-    const formatDateForMySQL = (dateString) => {
-      if (!dateString) return null;
-      const date = new Date(dateString);
-      return date.toISOString().slice(0, 19).replace('T', ' ');
-    };
-    
-    const formattedStartDate = formatDateForMySQL(start_date);
-    const formattedEndDate = formatDateForMySQL(end_date);
-    
-    await pool.query(
-      `UPDATE trips SET destination = ?, destination_iata_code = ?, start_date = ?, end_date = ?, budget = ?, group_size = ?, transport = ?, activities = ?, other_activity = ?, special_needs = ?, name = ? WHERE id = ?`,
-      [destination, destination_iata_code, formattedStartDate, formattedEndDate, budget, group_size, transport, JSON.stringify(activities), other_activity, special_needs, name, tripId]
-    );
-    res.status(200).send({ message: "Trip updated successfully" });
+    const connection = await pool.getConnection();
+    try {
+      await connection.beginTransaction();
+      
+      // Format dates properly for MySQL
+      const formatDateForMySQL = (dateString) => {
+        if (!dateString) return null;
+        const date = new Date(dateString);
+        return date.toISOString().slice(0, 19).replace('T', ' ');
+      };
+      
+      const formattedStartDate = formatDateForMySQL(start_date);
+      const formattedEndDate = formatDateForMySQL(end_date);
+      
+      await connection.query(
+        `UPDATE trips SET destination = ?, destination_iata_code = ?, start_date = ?, end_date = ?, budget = ?, group_size = ?, transport = ?, activities = ?, other_activity = ?, special_needs = ?, name = ? WHERE id = ?`,
+        [destination, destination_iata_code, formattedStartDate, formattedEndDate, budget, group_size, transport, JSON.stringify(activities), other_activity, special_needs, name, parsedTripId]
+      );
+      
+      // If budget is provided, update budgets.total_budget but keep planned_expenses unchanged
+      if (budget !== undefined) {
+        await connection.query(
+          `UPDATE budgets SET total_budget = ? WHERE trip_id = ?`,
+          [budget, parsedTripId]
+        );
+      }
+      
+      await connection.commit();
+      res.status(200).send({ message: "Trip updated successfully" });
+    } catch (err) {
+      await connection.rollback();
+      throw err;
+    } finally {
+      connection.release();
+    }
   } catch (err) {
     console.error('Error updating trip:', err);
     res.status(500).send({ message: "Error updating trip", error: err.message });
@@ -356,6 +375,86 @@ router.put('/:tripId/name', async (req, res) => {
       console.error('Error updating trip name:', err);
       res.status(500).send({ message: "Error updating trip name" });
     }
+  });
+
+// Sync saved trips to point to latest trip versions for each name
+router.post('/sync-saved/:userId', async (req, res) => {
+  const { userId } = req.params;
+  try {
+    const pool = getPool();
+    const connection = await pool.getConnection();
+    try {
+      await connection.beginTransaction();
+
+      // Step 1: Group saved trips by name and keep only the most recent one for each name
+      await connection.query(`
+        DELETE s1 FROM saved_trips s1
+        INNER JOIN saved_trips s2 ON s1.name = s2.name AND s1.id < s2.id
+        INNER JOIN trips t1 ON s1.trip_id = t1.id
+        INNER JOIN trips t2 ON s2.trip_id = t2.id
+        WHERE t1.user_id = ? AND t2.user_id = ?
+      `, [userId, userId]);
+
+      // Step 2: For each remaining saved trip, update to the latest trip id with the same name
+      const [savedTrips] = await connection.query(`
+        SELECT st.id as saved_id, st.trip_id as old_trip_id, st.name
+        FROM saved_trips st
+        JOIN trips t ON st.trip_id = t.id
+        WHERE t.user_id = ?
+      `, [userId]);
+
+      for (const saved of savedTrips) {
+        // Find the latest trip with the same name for this user
+        const [latest] = await connection.query(`
+          SELECT id
+          FROM trips
+          WHERE user_id = ? AND name = ?
+          ORDER BY id DESC LIMIT 1
+        `, [userId, saved.name]);
+
+        if (latest.length > 0 && latest[0].id != saved.old_trip_id) {
+          // Update the saved_trips row to the latest trip id
+          await connection.query(`
+            UPDATE saved_trips SET trip_id = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?
+          `, [latest[0].id, saved.saved_id]);
+        }
+      }
+
+      await connection.commit();
+      res.status(200).send({ message: "Saved trips synced to latest versions" });
+    } catch (err) {
+      await connection.rollback();
+      throw err;
+    } finally {
+      connection.release();
+    }
+  } catch (err) {
+    console.error('Error syncing saved trips:', err);
+    res.status(500).send({ message: "Error syncing saved trips" });
+  }
+});
+
+// Get the latest trip ID for a user and trip name
+router.get('/latest-trip/:userId/:name', async (req, res) => {
+  const { userId, name } = req.params;
+  try {
+    const pool = getPool();
+    const [latest] = await pool.query(`
+      SELECT id
+      FROM trips
+      WHERE user_id = ? AND name = ?
+      ORDER BY id DESC LIMIT 1
+    `, [userId, name]);
+
+    if (latest.length > 0) {
+      res.status(200).send({ tripId: latest[0].id });
+    } else {
+      res.status(404).send({ message: "No trip found" });
+    }
+  } catch (err) {
+    console.error('Error getting latest trip:', err);
+    res.status(500).send({ message: "Error getting latest trip" });
+  }
 });
 
 // Get trip summary (all data for a trip)

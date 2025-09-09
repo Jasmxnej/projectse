@@ -77,6 +77,20 @@ const api = {
     }
   },
 
+  async updateTrip(tripId: string, tripData: Partial<TripData>) {
+    if (isApiDown) {
+      console.log('API is down, simulating trip update.');
+      return { success: true };
+    }
+    try {
+      const response = await apiClient.put(`/trips/${tripId}`, tripData);
+      return response.data;
+    } catch (error) {
+      console.error('Error updating trip, simulating success:', error);
+      return { success: true };
+    }
+  },
+
   async getTripById(tripId: string) {
     if (isApiDown) {
       console.log(`API is down, returning mock trip data for tripId: ${tripId}`);

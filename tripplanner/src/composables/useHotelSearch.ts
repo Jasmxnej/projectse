@@ -16,7 +16,7 @@ export function useHotelSearch() {
   const selectedHotelDetails = ref<Hotel | null>(null);
   const isLoading = ref(false);
   const currentPage = ref(1);
-  const hotelsPerPage = 10; // Set to 10 to ensure at least 7 hotels per page after filtering
+  const hotelsPerPage = 20; // Increased to show more than 7 hotels per page
   const totalPages = ref(1);
   const { generatedContent, generateContent } = useGemini();
 

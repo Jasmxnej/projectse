@@ -12,7 +12,7 @@
           <div class="flex items-center justify-between">
             <div class="flex items-center space-x-4">
               <div class="flex flex-wrap gap-2">
-                <span v-for="(type, index) in plugInfo.types" :key="index"
+                <span v-for="(type, index) in plugInfo.types.slice(0, 2)" :key="index"
                       class="inline-flex items-center px-2 py-1 bg-white rounded-md border border-gray-200 text-sm font-semibold text-teal-700">
                   Type {{ type }}
                 </span>

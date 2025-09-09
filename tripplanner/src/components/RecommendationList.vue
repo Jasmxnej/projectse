@@ -18,7 +18,7 @@
           :src="item.image || item.cachedImageUrl || `https://via.placeholder.com/300x200/e5e7eb/6b7280?text=${encodeURIComponent(item.name)}`"
           :alt="item.name"
           class="w-16 h-16 rounded-lg object-cover"
-          @error="handleImageError($event, item, item.category)"
+          @error="handleImageError($event, item.name)"
           @load="item.imageLoaded = true"
         />
         <div class="flex-1">

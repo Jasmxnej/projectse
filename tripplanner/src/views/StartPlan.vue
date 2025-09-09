@@ -133,7 +133,7 @@
       <div class="text-center pt-2">
         <button
           type="button"
-          @click="submitForm"
+          @click="handleSubmit"
           :disabled="!(formData.destination && formData.startDate && formData.endDate && formData.groupSize && formData.budget)"
           :class="[
             'px-8 py-3 rounded-full font-semibold transition-all duration-300 w-full text-lg shadow-md hover:shadow-xl hover:scale-105',
@@ -167,6 +167,17 @@ const {
   handleCityInput,
   selectCity,
 } = useStartPlanForm()
+
+const handleSubmit = async () => {
+  try {
+    const tripId = await submitForm();
+    // Navigate to flight page for new trip creation
+    router.push({ name: 'flight', params: { tripId } });
+  } catch (error) {
+    console.error('Error in handleSubmit:', error);
+    // Navigation already handled in composable for Gemini fallback if success
+  }
+}
 
 const tags = [
   { label: 'Food', icon: Utensils },

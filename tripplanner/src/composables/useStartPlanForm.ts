@@ -6,6 +6,7 @@ import { useTripStore } from '@/stores/trip';
 import api from '@/api';
 import { useGemini } from './gemini';
 import { ensureIntUserId } from './mockData';
+import { type TripData } from '@/api';
 
 // Types
 interface TravelPlan {
@@ -65,11 +66,11 @@ export function useStartPlanForm() {
     if (formData.groupSize > 1) formData.groupSize--;
   };
 
-  const saveToDatabase = async (plan: Omit<TravelPlan, 'id'>): Promise<string> => {
+  const saveToDatabase = async (plan: Omit<TravelPlan, 'id'>, existingTripId?: string): Promise<string> => {
     if (!authStore.token) {
       throw new Error('Authentication token not found.');
     }
-    const tripData = {
+    const baseTripData = {
       user_id: ensureIntUserId(authStore.currentUser.id),
       destination: plan.destination,
       destination_iata_code: plan.destinationIataCode,
@@ -81,20 +82,41 @@ export function useStartPlanForm() {
       activities: plan.activities,
       other_activity: plan.otherActivity,
       special_needs: plan.specialNeeds,
-      name: `${plan.destination} Trip`,
       trip_type: plan.tripType,
-    };
-    const response = await api.saveTrip(tripData);
-    return response.id;
+    } as Partial<TripData>;
+    if (!existingTripId) {
+      // Only for new trips, include generated name
+      const newTripData = { ...baseTripData, name: `${plan.destination} Trip` } as TripData;
+      // Create new trip
+      const response = await api.saveTrip(newTripData);
+      return response.id;
+    } else {
+      // For updates, exclude name to preserve existing
+      // Update existing trip
+      await api.updateTrip(existingTripId, baseTripData);
+      return existingTripId;
+    }
   };
 
-  const submitForm = async () => {
+  const submitForm = async (param?: any) => {
+    let existingTripId: string | undefined;
+    if (param && typeof param === 'string' && !isNaN(parseInt(param)) && parseInt(param) > 0) {
+      existingTripId = param;
+    } // else treat as create (ignore event or invalid param)
     try {
       isSubmitting.value = true;
-      const newTripId = await saveToDatabase({ ...formData });
-      tripStore.setTripDetails({ ...formData, id: newTripId });
-      tripStore.setTripId(parseInt(newTripId, 10));
-      router.push({ name: 'flight', params: { tripId: newTripId } });
+      const tripId = await saveToDatabase({ ...formData }, existingTripId);
+      tripStore.setTripDetails({ ...formData, id: tripId });
+      tripStore.setTripId(parseInt(tripId, 10));
+      // Sync saved trips only after update (edit)
+      if (existingTripId && authStore.currentUser?.id) {
+        await axios.post(`http://localhost:3002/api/trips/sync-saved/${authStore.currentUser.id}`);
+      }
+      // For create (new trip), navigate to flight page
+      if (!existingTripId) {
+        router.push({ name: 'flight', params: { tripId } });
+      }
+      return tripId; // Return the trip ID for use in navigation (for edit)
     } catch (e) {
       console.error('Error saving trip, attempting to use Gemini:', e);
       try {
@@ -104,13 +126,22 @@ export function useStartPlanForm() {
           ...formData,
           destinationIataCode: 'FROM_GEMINI', // Placeholder, ideally parsed from response
         };
-        const newTripId = await saveToDatabase(tripData);
-        tripStore.setTripDetails({ ...tripData, id: newTripId });
-        tripStore.setTripId(parseInt(newTripId, 10));
-        router.push({ name: 'flight', params: { tripId: newTripId } });
+        const tripId = await saveToDatabase(tripData, existingTripId);
+        tripStore.setTripDetails({ ...tripData, id: tripId });
+        tripStore.setTripId(parseInt(tripId, 10));
+        // Sync saved trips only after update (edit)
+        if (existingTripId && authStore.currentUser?.id) {
+          await axios.post(`http://localhost:3002/api/trips/sync-saved/${authStore.currentUser.id}`);
+        }
+        // For create (new trip), navigate to flight page
+        if (!existingTripId) {
+          router.push({ name: 'flight', params: { tripId } });
+        }
+        return tripId;
       } catch (geminiE) {
         console.error('Error with Gemini fallback:', geminiE);
         alert('Failed to save trip with both primary service and fallback. Please try again later.');
+        throw geminiE;
       }
     } finally {
       isSubmitting.value = false;
