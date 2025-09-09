@@ -1,29 +1,14 @@
 <template>
   <form @submit.prevent="searchHotels" class="space-y-6 max-w-5xl mx-auto p-6 animate-fade-slide">
     <!-- Location Input -->
-    <div class="relative">
+    <div>
       <label class="block text-sm font-medium text-gray-700 mb-1">City</label>
-      <input
-        type="text"
+      <SearchableSelect
         v-model="location"
-        @input="handleCityInput"
+        @update:iata="(iata) => { cityIata = iata }"
         placeholder="e.g. Tokyo"
-        class="w-full px-4 py-2 rounded-xl border border-gray-300 shadow-sm focus:outline-none focus:ring-teal-500 focus:border-teal-500"
-        required
+        class="w-full"
       />
-      <ul
-        v-if="citySuggestions.length"
-        class="absolute z-10 w-full bg-white border border-gray-200 rounded-md shadow max-h-48 overflow-auto mt-1"
-      >
-        <li
-          v-for="(city, index) in citySuggestions"
-          :key="city.iataCode + index"
-          @click="selectCity(city)"
-          class="px-4 py-2 text-sm hover:bg-gray-100 cursor-pointer"
-        >
-          {{ city.name }} ({{ city.iataCode }})
-        </li>
-      </ul>
     </div>
 
     <!-- Date Selection -->
@@ -198,13 +183,9 @@
 
 <script setup lang="ts">
 import { ref, onMounted, watch } from 'vue';
-import axios from 'axios';
 import { useTripStore } from '@/stores/trip';
+import SearchableSelect from '@/components/ui/SearchableSelect.vue';
 
-interface City {
-  name: string;
-  iataCode: string;
-}
 
 const props = defineProps({
   initialStartDate: String,
@@ -228,7 +209,6 @@ const emit = defineEmits(['search', 'skip', 'go-back']);
 const tripStore = useTripStore();
 
 const location = ref(props.initialLocation || tripStore.destination || '');
-const citySuggestions = ref<City[]>([]);
 const cityIata = ref(props.initialCityCode || tripStore.destinationIataCode || '');
 const checkInDate = ref(props.initialStartDate || tripStore.startDate || '');
 const checkOutDate = ref(props.initialEndDate || tripStore.endDate || '');
@@ -239,27 +219,6 @@ const showFilters = ref(false);
 const minPrice = ref<number | null>(null);
 const maxPrice = ref<number | null>(null);
 const minRating = ref<string>('');
-
-const handleCityInput = async () => {
-  if (location.value.length < 1) {
-    citySuggestions.value = [];
-    return;
-  }
-  try {
-    const response = await axios.get('http://localhost:3002/api/amadeus/cities', {
-      params: { keyword: location.value }
-    });
-    citySuggestions.value = response.data;
-  } catch (error) {
-    console.error('Error fetching city suggestions:', error);
-  }
-};
-
-const selectCity = (city: City) => {
-  location.value = city.name;
-  cityIata.value = city.iataCode;
-  citySuggestions.value = [];
-};
 
 const searchHotels = () => {
   if (!cityIata.value) {

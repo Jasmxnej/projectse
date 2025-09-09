@@ -292,14 +292,14 @@ router.put('/:tripId', async (req, res) => {
       
       await connection.query(
         `UPDATE trips SET destination = ?, destination_iata_code = ?, start_date = ?, end_date = ?, budget = ?, group_size = ?, transport = ?, activities = ?, other_activity = ?, special_needs = ?, name = ? WHERE id = ?`,
-        [destination, destination_iata_code, formattedStartDate, formattedEndDate, budget, group_size, transport, JSON.stringify(activities), other_activity, special_needs, name, parsedTripId]
+        [destination, destination_iata_code, formattedStartDate, formattedEndDate, budget, group_size, transport, JSON.stringify(activities), other_activity, special_needs, name, tripId]
       );
       
       // If budget is provided, update budgets.total_budget but keep planned_expenses unchanged
       if (budget !== undefined) {
         await connection.query(
           `UPDATE budgets SET total_budget = ? WHERE trip_id = ?`,
-          [budget, parsedTripId]
+          [budget, tripId]
         );
       }
       

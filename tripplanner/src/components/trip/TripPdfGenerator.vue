@@ -16,35 +16,32 @@ const props = defineProps({
   trip: { type: Object as PropType<Trip>, required: true },
 });
 
-
-
-
-
-
 const generateCompletePdf = async () => {
   const element = document.getElementById('app') || document.body;
-  const width = window.innerWidth;
-  const height = window.innerHeight;
+  const fullWidth = Math.max(document.documentElement.scrollWidth, element.scrollWidth, window.innerWidth);
+  const fullHeight = Math.max(document.documentElement.scrollHeight, element.scrollHeight, window.innerHeight);
   const opt = {
-    margin: 0,
+    margin: [0.5, 0.5, 0.5, 0.5],
     filename: `trip-screenshot-${props.trip.destination.toLowerCase().replace(/\s+/g, '-')}.pdf`,
     image: { type: 'jpeg', quality: 0.98 },
     html2canvas: {
-      scale: 1,
+      scale: 2,
       useCORS: true,
       letterRendering: true,
       allowTaint: true,
-      width: width,
-      height: height,
-      windowWidth: width,
-      windowHeight: height,
-      x: window.scrollX,
-      y: window.scrollY
+      width: fullWidth,
+      height: fullHeight,
+      windowWidth: fullWidth,
+      windowHeight: fullHeight,
+      x: 0,
+      y: 0,
+      scrollX: 0,
+      scrollY: 0
     },
     jsPDF: {
-      unit: 'px',
-      format: [width, height],
-      orientation: width > height ? 'landscape' : 'portrait'
+      unit: 'mm',
+      format: 'a4',
+      orientation: 'portrait'
     }
   };
 

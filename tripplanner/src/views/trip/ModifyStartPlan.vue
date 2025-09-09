@@ -13,26 +13,12 @@
       <!-- Destination -->
       <div>
         <label class="text-base font-medium mb-2 block">Destination</label>
-        <div class="relative">
-          <input
-            v-model="formData.destination"
-            type="text"
-            placeholder="Type to search..."
-            class="w-full h-[44px] px-4 text-sm bg-white border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-1 focus:ring-teal-500"
-            @input="handleCityInput"
-            required
-          />
-          <ul v-if="citySuggestions.length > 0" class="absolute z-50 w-full bg-white border border-gray-300 rounded-lg mt-1 shadow-xl max-h-48 overflow-auto animate-fade-in-fast">
-            <li
-              v-for="suggestion in citySuggestions"
-              :key="suggestion.iataCode"
-              @click="selectCity(suggestion)"
-              class="px-4 py-2 text-sm  cursor-pointer hover:bg-teal-500 transition-colors"
-            >
-              {{ suggestion.name }}
-            </li>
-          </ul>
-        </div>
+        <SearchableSelect
+          v-model="formData.destination"
+          @update:iata="(iata) => { formData.destinationIataCode = iata }"
+          placeholder="Type to search..."
+          class="w-full h-[44px]"
+        />
       </div>
 
       <!-- Date Range Picker -->
@@ -54,7 +40,7 @@
 
       <!-- Conditional Fields -->
       <transition name="fade-slide">
-        <div v-if="formData.destination && formData.startDate && formData.endDate" class="space-y-8 animate-fade-slide">
+        <div v-if="formData.startDate && formData.endDate" class="space-y-8 animate-fade-slide">
           <!-- Travelers + Budget -->
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
@@ -130,10 +116,10 @@
         <button
           type="button"
           @click="submitForm"
-          :disabled="!(formData.destination && formData.startDate && formData.endDate && formData.groupSize && formData.budget)"
+          :disabled="!(formData.startDate && formData.endDate && formData.groupSize && formData.budget)"
           :class="[
             'px-8 py-3 rounded-full font-semibold transition-all duration-300 w-full text-lg shadow-md hover:shadow-xl hover:scale-105',
-            formData.destination && formData.startDate && formData.endDate && formData.groupSize && formData.budget
+            formData.startDate && formData.endDate && formData.groupSize && formData.budget
               ? ' bg-black text-white'
               : 'bg-gray-300 text-gray-500 cursor-not-allowed'
           ]"
@@ -150,6 +136,7 @@
 <script setup lang="ts">
 import Navbar from '@/components/Nav.vue'
 import { useStartPlanForm } from '@/composables/useStartPlanForm'
+import SearchableSelect from '@/components/ui/SearchableSelect.vue'
 import { Calendar, MapPin, User, Utensils, Mountain, Landmark, PartyPopper, TreePalm, Search } from 'lucide-vue-next'
 import Datepicker from '@vuepic/vue-datepicker'
 import '@vuepic/vue-datepicker/dist/main.css'
@@ -163,9 +150,6 @@ const {
   formData,
   isSubmitting,
   submitForm: originalSubmitForm,
-  citySuggestions,
-  handleCityInput,
-  selectCity,
 } = useStartPlanForm()
 
 

@@ -49,7 +49,7 @@ router.post('/amadeus/hotels', async (req, res) => {
     try {
       const hotelsByCityResponse = await amadeus.referenceData.locations.hotels.byCity.get({
         cityCode: cityCode,
-        radius: 10, 
+        radius: 20,
         radiusUnit: 'KM',
         hotelSource: 'ALL'
       });
@@ -202,11 +202,11 @@ router.post('/amadeus/hotels', async (req, res) => {
       ];
     }
     
-    // Use the limit from request body or default to 5
-    const requestLimit = req.body.limit || 5;
+    // Use the limit from request body or default to 7 for consistency with frontend
+    const requestLimit = req.body.limit || 7;
     const requestPage = req.body.page || 1;
     
-    const totalMockHotels = Math.min(hotelNames.length, requestLimit * 2);
+    const totalMockHotels = Math.min(hotelNames.length, requestLimit * 3); // More mock for pagination
     const totalPages = Math.ceil(totalMockHotels / requestLimit);
     const startIndex = (requestPage - 1) * requestLimit;
     const endIndex = Math.min(startIndex + requestLimit, totalMockHotels);

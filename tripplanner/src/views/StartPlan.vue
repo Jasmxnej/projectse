@@ -17,26 +17,12 @@
       <!-- Destination -->
       <div>
         <label class="text-base font-medium mb-2 block">Destination</label>
-        <div class="relative">
-          <input
-            v-model="formData.destination"
-            type="text"
-            placeholder="Type to search..."
-            class="w-full h-[44px] px-4 text-sm bg-white border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-1 focus:ring-secondary1"
-            @input="handleCityInput"
-            required
-          />
-          <ul v-if="citySuggestions.length > 0" class="absolute z-50 w-full bg-white border border-gray-300 rounded-lg mt-1 shadow-xl max-h-48 overflow-auto animate-fade-in-fast">
-            <li
-              v-for="suggestion in citySuggestions"
-              :key="suggestion.iataCode"
-              @click="selectCity(suggestion)"
-              class="px-4 py-2 text-sm  cursor-pointer hover:bg-secondary1 transition-colors"
-            >
-              {{ suggestion.name }}
-            </li>
-          </ul>
-        </div>
+        <SearchableSelect
+          v-model="formData.destination"
+          @update:iata="(iata) => { formData.destinationIataCode = iata }"
+          placeholder="Type to search..."
+          class="w-full h-[44px]"
+        />
       </div>
 
       <!-- Date Range Picker -->
@@ -153,8 +139,9 @@
 
 <script setup lang="ts">
 import Navbar from '@/components/Nav.vue'
+import SearchableSelect from '@/components/ui/SearchableSelect.vue'
 import { useStartPlanForm } from '@/composables/useStartPlanForm'
-import { Calendar, MapPin, User, Utensils, Mountain, Landmark, PartyPopper, TreePalm, Search } from 'lucide-vue-next'
+import { Calendar, MapPin, User, Utensils, Mountain, Landmark, PartyPopper, TreePalm, Search, ChevronDown } from 'lucide-vue-next'
 import Datepicker from '@vuepic/vue-datepicker'
 import '@vuepic/vue-datepicker/dist/main.css'
 import { ref } from 'vue'
@@ -163,9 +150,6 @@ const {
   formData,
   isSubmitting,
   submitForm,
-  citySuggestions,
-  handleCityInput,
-  selectCity,
 } = useStartPlanForm()
 
 const handleSubmit = async () => {

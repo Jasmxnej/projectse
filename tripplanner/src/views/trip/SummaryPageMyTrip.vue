@@ -231,10 +231,10 @@
 
             <!-- Packing List Tab -->
             <div v-else-if="selectedView === 'packing'">
-              <TravelPlugInfo :destination="trip.destination" />
+              
               <TripPackingList
                 ref="packingComponent"
-                :trip-id="trip.id"
+                :destination="trip.destination"
                 @data-updated="updatePackingData"
               />
             </div>

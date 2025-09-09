@@ -48,7 +48,6 @@ export function useStartPlanForm() {
   const filterSectionRef = ref<HTMLElement | null>(null);
   const isSubmitting = ref(false);
   const savedPlans = ref<TravelPlan[]>([]);
-  const citySuggestions = ref<City[]>([]);
   const authStore = useAuthStore();
   const tripStore = useTripStore();
   const router = useRouter();
@@ -148,48 +147,6 @@ export function useStartPlanForm() {
     }
   };
 
-  const selectCity = (city: City) => {
-    formData.destination = city.name;
-    formData.destinationIataCode = city.iataCode;
-    citySuggestions.value = [];
-  };
-
-  const handleCityChange = () => {
-    // When user selects from datalist, find the matching city and set IATA code
-    const selectedCity = citySuggestions.value.find(city => city.name === formData.destination);
-    if (selectedCity) {
-      formData.destinationIataCode = selectedCity.iataCode;
-    } else {
-      // If no exact match, clear IATA code
-      formData.destinationIataCode = '';
-    }
-  };
-
-  const handleCityInput = async () => {
-    if (formData.destination.length < 1) {
-      citySuggestions.value = [];
-      return;
-    }
-    try {
-      const response = await axios.get('http://localhost:3002/api/amadeus/cities', {
-        params: { keyword: formData.destination }
-      });
-      citySuggestions.value = response.data;
-    } catch (error) {
-      console.error('Error fetching city suggestions, attempting to use Gemini:', error);
-      try {
-        const prompt = `Provide a list of city names and their IATA codes starting with "${formData.destination}". Return the data in a JSON array format with "name" and "iataCode" properties. For example: [{"name": "Bangkok", "iataCode": "BKK"}]`;
-        await generateContent(prompt, import.meta.env.VITE_GEMINI_API_KEY);
-        if (Array.isArray(generatedContent.value)) {
-          citySuggestions.value = generatedContent.value;
-        } else if (generatedContent.value && Array.isArray(generatedContent.value.data)) {
-          citySuggestions.value = generatedContent.value.data;
-        }
-      } catch (geminiE) {
-        console.error('Error with Gemini fallback for cities:', geminiE);
-      }
-    }
-  };
 
   const fetchSavedPlans = async () => {
     if (!authStore.currentUser?.id) return;
@@ -211,6 +168,37 @@ export function useStartPlanForm() {
 
   onMounted(fetchSavedPlans);
 
+  // City search functionality
+  const citySuggestions = ref<City[]>([]);
+  const isSearching = ref(false);
+
+  const handleCityInput = async (event: Event) => {
+    const target = event.target as HTMLInputElement;
+    const query = target.value.trim();
+    
+    if (query.length < 3) {
+      citySuggestions.value = [];
+      return;
+    }
+
+    try {
+      isSearching.value = true;
+      const response = await axios.get(`http://localhost:3002/api/amadeus/cities?keyword=${encodeURIComponent(query)}`);
+      citySuggestions.value = response.data;
+    } catch (error) {
+      console.error('Error searching cities:', error);
+      citySuggestions.value = [];
+    } finally {
+      isSearching.value = false;
+    }
+  };
+
+  const selectCity = (city: City) => {
+    formData.destination = city.name;
+    formData.destinationIataCode = city.iataCode;
+    citySuggestions.value = [];
+  };
+
   return {
     formData,
     showFilter,
@@ -219,11 +207,10 @@ export function useStartPlanForm() {
     increaseGroupSize,
     decreaseGroupSize,
     submitForm,
-    selectCity,
-    handleCityChange,
     savedPlans,
     isFormValid,
     citySuggestions,
     handleCityInput,
+    selectCity,
   };
 }
