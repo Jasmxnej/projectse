@@ -140,12 +140,17 @@ const api = {
     }
   },
 
-  // Auth
+  // Auth - Don't use API down check for auth endpoints
   get(url: string) {
     return apiClient.get(url);
   },
-  
+
   post(url: string, data: any) {
+    // Don't check isApiDown for auth endpoints to ensure real authentication
+    if (url.includes('/auth/')) {
+      return apiClient.post(url, data);
+    }
+
     if (isApiDown) {
       console.log('API is down, simulating post request:', url);
       return Promise.reject(new Error('API is down'));

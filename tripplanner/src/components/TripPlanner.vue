@@ -191,7 +191,7 @@ const poiSuggestions = ref<any[]>([]);
 const destinationCoords = ref<{ latitude: number, longitude: number } | null>(null);
 const dragging = ref(false);
 const draggedActivity = ref<{ dayId: number, index: number } | null>(null);
-let debounceTimer: number;
+let debounceTimer: any;
 const isSearchingPois = ref(false);
 
 // Clear search function
@@ -425,6 +425,17 @@ const getCategoryIcon = (category: string) => {
   return `https://source.unsplash.com/featured/300x200/?${tripStore.destination},${category.toLowerCase()}`;
 };
 
+// Fetch trip data from database
+const fetchTripData = async () => {
+  try {
+    const response = await axios.get(`http://localhost:3002/api/trips/by-id/${tripStore.tripId}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching trip data:', error);
+    return null;
+  }
+};
+
 onMounted(() => {
   getDestinationCoords();
   // Only get initial recommendations for places, not activities
@@ -432,42 +443,100 @@ onMounted(() => {
   getInitialRecommendations();
 });
 
-// Get initial recommendations using Gemini AI
+// Get initial recommendations using Gemini AI with trip data from database
 const getInitialRecommendations = async () => {
   try {
-    // Use Gemini AI to generate place recommendations with better prompt
-    const promptText = `Generate exactly 5 specific place recommendations for ${tripStore.destination}. Include popular attractions like MBK Center and similar places. For each place, provide:
+    // First fetch trip data from database
+    const tripData = await fetchTripData();
+
+    let activitiesText = 'general activities';
+    let specialNeedsText = '';
+    let otherActivityText = '';
+
+    if (tripData) {
+      // Parse activities if it's stored as JSON string
+      let activities = tripData.activities || [];
+      if (typeof activities === 'string') {
+        try {
+          activities = JSON.parse(activities);
+        } catch (e) {
+          activities = activities.split(',').map((item: string) => item.trim());
+        }
+      }
+
+      if (Array.isArray(activities) && activities.length > 0) {
+        activitiesText = activities.join(', ');
+      }
+
+      if (tripData.special_needs) {
+        specialNeedsText = ` Special needs/requirements: ${tripData.special_needs}.`;
+      }
+
+      if (tripData.other_activity) {
+        otherActivityText = ` Additional activity preferences: ${tripData.other_activity}.`;
+      }
+    }
+
+    // Use Gemini AI to generate place recommendations with trip data
+    const promptText = `Generate exactly 5 specific place recommendations for ${tripStore.destination} based on this trip profile:
+    - Trip activities/interests: ${activitiesText}
+    - Group size: ${tripData?.group_size || 'Not specified'}
+    - Budget level: ${tripData?.budget ? `Approximately ${tripData.budget} THB total` : 'Not specified'}${specialNeedsText}${otherActivityText}
+
+    IMPORTANT: You must provide exactly 5 recommendations with UNIQUE categories from these options: SIGHTS, SHOPPING, RESTAURANT, NIGHTLIFE, CULTURE. Each category can only be used once.
+
+    For each place, provide:
     - name: The exact name of the place
-    - description: A detailed 2-3 sentence description explaining what makes this place special and worth visiting
-    - category: One of SIGHTS, SHOPPING, RESTAURANT, NIGHTLIFE, or CULTURE
-    
+    - description: A detailed 2-3 sentence description explaining what makes this place special and worth visiting, considering the trip preferences
+    - category: One of SIGHTS, SHOPPING, RESTAURANT, NIGHTLIFE, or CULTURE (each category used exactly once)
+
     Respond ONLY with valid JSON in this exact format:
     {
       "recommendations": [
         {
           "name": "Place Name",
-          "description": "Detailed description of the place and why visitors should go there",
+          "description": "Detailed description of the place and why visitors should go there based on trip preferences",
           "category": "SIGHTS"
+        },
+        {
+          "name": "Place Name 2",
+          "description": "Detailed description of the place and why visitors should go there based on trip preferences",
+          "category": "SHOPPING"
+        },
+        {
+          "name": "Place Name 3",
+          "description": "Detailed description of the place and why visitors should go there based on trip preferences",
+          "category": "RESTAURANT"
+        },
+        {
+          "name": "Place Name 4",
+          "description": "Detailed description of the place and why visitors should go there based on trip preferences",
+          "category": "NIGHTLIFE"
+        },
+        {
+          "name": "Place Name 5",
+          "description": "Detailed description of the place and why visitors should go there based on trip preferences",
+          "category": "CULTURE"
         }
       ]
     }
-    
+
     Do not include any explanations, comments, or markdown formatting.`;
-    
+
     const prompt = {
       contents: [{ parts: [{ text: promptText }] }]
     };
-    
+
     const payload = {
       prompt,
       apiKey: import.meta.env.VITE_GEMINI_API_KEY,
     };
-    
+
     const response = await axios.post('http://localhost:3002/api/gemini/generate', payload);
     const generatedData = response.data;
-    
+
     let recommendations = [];
-    
+
     // Handle different response formats from Gemini
     if (generatedData.recommendations && Array.isArray(generatedData.recommendations)) {
       recommendations = generatedData.recommendations;
@@ -490,11 +559,11 @@ const getInitialRecommendations = async () => {
     } else {
       throw new Error('Invalid response format from Gemini AI');
     }
-    
+
     if (recommendations.length === 0) {
       throw new Error('No recommendations received from Gemini');
     }
-    
+
     // Process AI results and fetch images from Unsplash
     const itemsWithImages = await Promise.all(recommendations.slice(0, 5).map(async (item: any, index: number) => {
       try {
@@ -502,7 +571,7 @@ const getInitialRecommendations = async () => {
         if (index > 0) {
           await new Promise(resolve => setTimeout(resolve, 200));
         }
-        
+
         // Fetch image from Unsplash API
         const imageResponse = await axios.get(`http://localhost:3002/api/unsplash/image?place=${encodeURIComponent(item.name + ' ' + tripStore.destination)}`);
         return {
@@ -523,7 +592,7 @@ const getInitialRecommendations = async () => {
         };
       }
     }));
-    
+
     // Set recommendations in store
     tripStore.setRecommendedItems({
       categories: [{
@@ -532,10 +601,10 @@ const getInitialRecommendations = async () => {
       }],
       isMock: false
     });
-    
+
   } catch (error) {
     console.error('Error fetching Gemini recommendations:', error);
-    
+
     // Enhanced fallback recommendations based on destination
     const getDestinationSpecificPlaces = (destination: string) => {
       const dest = destination.toLowerCase();
@@ -557,16 +626,16 @@ const getInitialRecommendations = async () => {
         ];
       }
     };
-    
+
     const mockPlaces = getDestinationSpecificPlaces(tripStore.destination);
-    
+
     const mockRecommendations = await Promise.all(mockPlaces.map(async (place, index) => {
       try {
         // Add delay between requests
         if (index > 0) {
           await new Promise(resolve => setTimeout(resolve, 300));
         }
-        
+
         const imageResponse = await axios.get(`http://localhost:3002/api/unsplash/image?place=${encodeURIComponent(place.name + ' ' + tripStore.destination)}`);
         return {
           id: Date.now() + Math.random() + index,
@@ -585,7 +654,7 @@ const getInitialRecommendations = async () => {
         };
       }
     }));
-    
+
     const result = {
       categories: [{
         name: "Recommended for you",
@@ -593,12 +662,12 @@ const getInitialRecommendations = async () => {
       }],
       isMock: true
     };
-    
+
     tripStore.setRecommendedItems(result);
   }
 };
 
-let recommendationDebounceTimer: number;
+let recommendationDebounceTimer: any;
 const getRecommendations = async () => {
   clearTimeout(recommendationDebounceTimer);
   recommendationDebounceTimer = setTimeout(async () => {

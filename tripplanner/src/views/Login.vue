@@ -128,17 +128,8 @@ const handleLogin = async (): Promise<void> => {
     }, 2000)
   } catch (error: any) {
     console.error('Detailed login error:', error);
-    await authStore.mockLogin();
-    showSuccessPopup.value = true;
-    setTimeout(() => {
-      showSuccessPopup.value = false;
-      const redirectPath = route.query.redirect as string;
-      if (redirectPath) {
-        router.push(redirectPath);
-      } else {
-        router.push('/home');
-      }
-    }, 2000);
+    showErrorPopup.value = true;
+    errorMessage.value = error.response?.data?.message || 'Login failed. Please check your credentials and try again.';
   } finally {
     isLoading.value = false
   }

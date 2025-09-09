@@ -16,7 +16,7 @@ export function useHotelSearch() {
   const selectedHotelDetails = ref<Hotel | null>(null);
   const isLoading = ref(false);
   const currentPage = ref(1);
-  const hotelsPerPage = 6; // Increased to show at least 6 hotels per page
+  const hotelsPerPage = 10; // Set to 10 to ensure at least 7 hotels per page after filtering
   const totalPages = ref(1);
   const { generatedContent, generateContent } = useGemini();
 
@@ -80,6 +80,9 @@ export function useHotelSearch() {
       adults: params.adults,
       page: currentPage.value,
       limit: hotelsPerPage,
+      minPrice: params.minPrice || null,
+      maxPrice: params.maxPrice || null,
+      minRating: params.minRating || null,
     };
 
     try {
@@ -89,10 +92,10 @@ export function useHotelSearch() {
       const totalItems = response.data?.total || hotelData.length;
       totalPages.value = Math.max(1, Math.ceil(totalItems / hotelsPerPage));
 
-      hotels.value = await Promise.all(hotelData.map(async (entry: any) => {
+      let processedHotels = await Promise.all(hotelData.map(async (entry: any) => {
         const hotel = entry.hotel;
         const offer = entry.offers?.[0];
-        
+
         // Improve image matching by using more specific hotel name keywords
         let imageKeyword = hotel.name || '';
         // Extract the hotel brand/chain name if possible
@@ -101,7 +104,7 @@ export function useHotelSearch() {
           // Use first two words of hotel name for better matching
           imageKeyword = hotelNameParts.slice(0, 2).join(' ');
         }
-        
+
         const image = await fetchImagesFromUnsplash(imageKeyword || hotel.cityCode || 'hotel');
 
         return {
@@ -131,6 +134,19 @@ export function useHotelSearch() {
           },
         };
       }));
+
+      // Apply client-side filters
+      if (params.minPrice !== null && params.minPrice !== undefined) {
+        processedHotels = processedHotels.filter(hotel => hotel.price >= params.minPrice);
+      }
+      if (params.maxPrice !== null && params.maxPrice !== undefined) {
+        processedHotels = processedHotels.filter(hotel => hotel.price <= params.maxPrice);
+      }
+      if (params.minRating) {
+        processedHotels = processedHotels.filter(hotel => hotel.rating && hotel.rating >= parseInt(params.minRating));
+      }
+
+      hotels.value = processedHotels;
 
     } catch (error) {
       console.error('Error fetching hotels:', error);

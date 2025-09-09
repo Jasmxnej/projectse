@@ -123,6 +123,17 @@ export function useStartPlanForm() {
     citySuggestions.value = [];
   };
 
+  const handleCityChange = () => {
+    // When user selects from datalist, find the matching city and set IATA code
+    const selectedCity = citySuggestions.value.find(city => city.name === formData.destination);
+    if (selectedCity) {
+      formData.destinationIataCode = selectedCity.iataCode;
+    } else {
+      // If no exact match, clear IATA code
+      formData.destinationIataCode = '';
+    }
+  };
+
   const handleCityInput = async () => {
     if (formData.destination.length < 1) {
       citySuggestions.value = [];
@@ -178,6 +189,7 @@ export function useStartPlanForm() {
     decreaseGroupSize,
     submitForm,
     selectCity,
+    handleCityChange,
     savedPlans,
     isFormValid,
     citySuggestions,

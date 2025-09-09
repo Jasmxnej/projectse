@@ -24,6 +24,6 @@ defineProps({
   description: String,
 });
 
-// We tell Vue that this component can emit an event named 'add-to-plan'
+
 defineEmits(['add-to-plan']);
 </script>

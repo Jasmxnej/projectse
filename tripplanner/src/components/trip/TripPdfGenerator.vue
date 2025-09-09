@@ -10,6 +10,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
 import html2pdf from 'html2pdf.js';
+import jsPDF from 'jspdf';
 import { useTripStore } from '@/stores/trip';
 
 const tripStore = useTripStore();
@@ -144,19 +145,53 @@ const getBudgetData = () => {
   };
 };
 
-// Generate a complete PDF with all sections
+// Generate a complete PDF with all sections using full page screenshot
 const generateCompletePdf = async () => {
   try {
-    console.log('Starting comprehensive PDF generation...');
-    
-    // Create a temporary div to hold all content
-    const tempDiv = document.createElement('div');
-    tempDiv.className = 'pdf-content';
-    tempDiv.style.padding = '20px';
-    tempDiv.style.fontFamily = 'Arial, sans-serif';
-    tempDiv.style.maxWidth = '800px';
-    tempDiv.style.margin = '0 auto';
-    tempDiv.style.backgroundColor = '#ffffff';
+    console.log('Starting comprehensive PDF generation with full page capture...');
+
+    // Use html2canvas to capture the entire page
+    const canvas = await html2pdf().from(document.body).set({
+      image: { type: 'jpeg', quality: 0.98 },
+      html2canvas: {
+        scale: 2,
+        useCORS: true,
+        allowTaint: true,
+        backgroundColor: '#ffffff',
+        width: window.innerWidth,
+        height: window.innerHeight,
+        scrollX: 0,
+        scrollY: 0
+      }
+    }).outputPdf();
+
+    // Convert canvas to PDF
+    const imgData = canvas.toDataURL('image/jpeg', 0.98);
+    const pdf = new jsPDF('p', 'mm', 'a4');
+
+    const imgWidth = 210; // A4 width in mm
+    const pageHeight = 295; // A4 height in mm
+    const imgHeight = (canvas.height * imgWidth) / canvas.width;
+    let heightLeft = imgHeight;
+
+    let position = 0;
+
+    // Add first page
+    pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
+    heightLeft -= pageHeight;
+
+    // Add additional pages if content is longer
+    while (heightLeft >= 0) {
+      position = heightLeft - imgHeight;
+      pdf.addPage();
+      pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
+      heightLeft -= pageHeight;
+    }
+
+    // Save the PDF
+    pdf.save(`${props.trip?.name || props.trip?.destination || 'trip'}-complete.pdf`);
+
+    console.log('PDF generated successfully with full page capture!');
     
     // Add trip title and details with budget overview (matching summary page layout)
     const titleSection = document.createElement('div');

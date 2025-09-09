@@ -1,5 +1,5 @@
 <template>
-  <div class="space-y-3">
+  <div class="space-y-3 ">
     <div v-if="isLoading" class="flex justify-center items-center p-4">
       <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-500"></div>
     </div>

@@ -302,12 +302,20 @@ const handleSubmit = async (): Promise<void> => {
     }, 2000)
   } catch (error: any) {
     console.error('Detailed signup error:', error);
-    await authStore.mockLogin();
-    showSuccessPopup.value = true;
-    setTimeout(() => {
-      showSuccessPopup.value = false;
-      router.push('/login');
-    }, 2000);
+    // Handle different types of errors
+    if (error.response?.status === 409) {
+      // User already exists
+      const errors = error.response.data.errors || {};
+      if (errors.email) {
+        errors.email = errors.email;
+      }
+      if (errors.username) {
+        errors.username = errors.username;
+      }
+    } else {
+      // General error
+      alert(error.response?.data?.message || 'Registration failed. Please try again.');
+    }
   } finally {
     isLoading.value = false
   }

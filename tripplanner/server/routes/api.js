@@ -41,7 +41,7 @@ router.get('/amadeus/hotels/search', async (req, res) => {
 
 router.post('/amadeus/hotels', async (req, res) => {
   try {
-    const { cityCode, checkInDate, checkOutDate, adults, page = 1, limit = 5 } = req.body;
+    const { cityCode, checkInDate, checkOutDate, adults, page = 1, limit = 20, minPrice, maxPrice, minRating } = req.body;
     if (!cityCode || !checkInDate || !checkOutDate || !adults) {
       return res.status(400).send({ message: 'Missing required search parameters: cityCode, checkInDate, checkOutDate, adults are required.' });
     }
@@ -105,8 +105,38 @@ router.post('/amadeus/hotels', async (req, res) => {
         }
       }
       
-      if (availableHotels.length > 0) {
-        return res.json({ data: availableHotels, totalPages });
+      // Apply server-side filters
+      let filteredHotels = availableHotels;
+
+      if (minPrice !== undefined && minPrice !== null) {
+        filteredHotels = filteredHotels.filter(hotel => {
+          const price = parseFloat(hotel.offers?.[0]?.price?.total || 0);
+          return price >= parseFloat(minPrice);
+        });
+      }
+
+      if (maxPrice !== undefined && maxPrice !== null) {
+        filteredHotels = filteredHotels.filter(hotel => {
+          const price = parseFloat(hotel.offers?.[0]?.price?.total || 0);
+          return price <= parseFloat(maxPrice);
+        });
+      }
+
+      if (minRating !== undefined && minRating !== null && minRating !== '') {
+        filteredHotels = filteredHotels.filter(hotel => {
+          const rating = hotel.hotel?.rating || 0;
+          return rating >= parseInt(minRating);
+        });
+      }
+
+      // Ensure we have at least some hotels by falling back to unfiltered if filtered result is too small
+      if (filteredHotels.length < 3 && availableHotels.length > 0) {
+        console.log('Filtered results too small, using unfiltered results');
+        filteredHotels = availableHotels;
+      }
+
+      if (filteredHotels.length > 0) {
+        return res.json({ data: filteredHotels, totalPages });
       } else {
         throw new Error('No available hotel offers found');
       }

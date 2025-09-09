@@ -79,10 +79,10 @@
               </div>
               
               <!-- Flight Summary -->
-              <div class="bg-gray-50 rounded-lg p-4 border border-gray-200" :class="{'opacity-50': !flights || flights.length === 0}">
+              <div class="bg-gray-50 rounded-lg p-4 border border-gray-200" :class="{'opacity-50': !flights || flights.length === 0 || (flights.length > 0 && flights.some(f => !f.airline || f.airline === 'Unknown Airline'))}">
                 <div class="flex items-center justify-between mb-2">
                   <h3 class="text-lg font-semibold text-gray-800">Flight{{ flights && flights.length > 1 ? 's' : '' }}</h3>
-                  <button v-if="flights && flights.length > 0" @click="editFlight" class="text-teal-600 hover:text-teal-800">
+                  <button v-if="flights && flights.length > 0 && flights.some(f => f.airline && f.airline !== 'Unknown Airline')" @click="editFlight" class="text-teal-600 hover:text-teal-800">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                       <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
                     </svg>
@@ -91,7 +91,7 @@
                     Add Flight
                   </button>
                 </div>
-                <div v-if="flights && flights.length > 0" class="space-y-3 text-sm">
+                <div v-if="flights && flights.length > 0 && flights.some(f => f.airline && f.airline !== 'Unknown Airline')" class="space-y-3 text-sm">
                   <div v-for="(flight, index) in flights" :key="flight.id || index" class="border-l-4 border-teal-500 pl-3">
                     <div v-if="flights.length > 1" class="text-xs text-teal-600 font-medium mb-1">
                       Leg {{ flight.leg_number || (index + 1) }} - {{ getFlightTypeLabel(flight.flight_type) }}
@@ -110,15 +110,15 @@
                   </div>
                 </div>
                 <div v-else class="text-sm text-gray-500 italic">
-                  <p>Not selected yet.</p>
+                  <p>You haven't selected a flight yet.</p>
                 </div>
               </div>
               
               <!-- Hotel Summary -->
-              <div class="bg-gray-50 rounded-lg p-4 border border-gray-200" :class="{'opacity-50': !hotel}">
+              <div class="bg-gray-50 rounded-lg p-4 border border-gray-200" :class="{'opacity-50': !hotel || hotel.name === 'Skipped'}">
                 <div class="flex items-center justify-between mb-2">
                   <h3 class="text-lg font-semibold text-gray-800">Hotel</h3>
-                  <button v-if="hotel" @click="editHotel" class="text-teal-600 hover:text-teal-800">
+                  <button v-if="hotel && hotel.name !== 'Skipped'" @click="editHotel" class="text-teal-600 hover:text-teal-800">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                       <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
                     </svg>
@@ -127,7 +127,7 @@
                     Add Hotel
                   </button>
                 </div>
-                <div v-if="hotel" class="space-y-2 text-sm">
+                <div v-if="hotel && hotel.name !== 'Skipped'" class="space-y-2 text-sm">
                   <p><span class="font-medium">Name:</span> {{ hotel.name || 'Hotel in ' + (trip?.destination || 'destination') }}</p>
                   <p><span class="font-medium">Location:</span> {{ hotel.location || hotel.cityCode || hotel.city_code || trip?.destination || 'Unknown' }}</p>
                   <p><span class="font-medium">Rating:</span>
@@ -144,7 +144,7 @@
                   <p><span class="font-medium">Price:</span> {{ formatPrice(hotel.price) }}</p>
                 </div>
                 <div v-else class="text-sm text-gray-500 italic">
-                  <p>Not selected yet.</p>
+                  <p>You haven't selected a hotel yet.</p>
                 </div>
               </div>
             </div>
@@ -186,12 +186,20 @@
             
             <!-- Flight Details Tab -->
             <div v-if="selectedView === 'flight'">
-              <FlightDetailsCard :flights="flights" @edit="editFlight" />
+              <div v-if="!flights || flights.length === 0 || (flights.length > 0 && flights.some(f => !f.airline || f.airline === 'Unknown Airline'))" class="text-center py-8 text-gray-500">
+                <p class="text-lg">You haven't selected a flight yet.</p>
+                <p class="text-sm mt-2">Click "Modify Trip" to add flight details.</p>
+              </div>
+              <FlightDetailsCard v-else :flights="flights" @edit="editFlight" />
             </div>
-            
+
             <!-- Hotel Details Tab -->
             <div v-else-if="selectedView === 'hotel'">
-              <HotelDetailsCard :hotel="hotel" :destination="trip?.destination" @edit="editHotel" />
+              <div v-if="!hotel || hotel.name === 'Skipped'" class="text-center py-8 text-gray-500">
+                <p class="text-lg">You haven't selected a hotel yet.</p>
+                <p class="text-sm mt-2">Click "Modify Trip" to add hotel details.</p>
+              </div>
+              <HotelDetailsCard v-else :hotel="hotel" :destination="trip?.destination" @edit="editHotel" />
             </div>
             
             <!-- Daily Schedule Tab -->
@@ -876,14 +884,42 @@ const saveTripName = async () => {
 // Auto-save function to save changes to database when modifications are made
 const autoSaveChanges = async () => {
   if (!trip.value?.id || !trip.value?.name) return;
-  
+
   try {
-    console.log('Auto-saving trip name to saved_trips...');
+    console.log('Auto-saving trip changes to database...');
+    // Update both trips and saved_trips tables
+    await updateTripDetails(trip.value.id);
     await saveTripDetails(trip.value.id);
     console.log('Auto-save completed successfully');
   } catch (error) {
     console.error('Auto-save failed:', error);
     // Don't show alert for auto-save failures to avoid interrupting user experience
+  }
+};
+
+// Update trip details in the trips table
+const updateTripDetails = async (tripId: string | number) => {
+  try {
+    console.log('Updating trip details in trips table for trip:', tripId);
+
+    await axios.put(`http://localhost:3002/api/trips/${tripId}`, {
+      name: trip.value.name,
+      destination: trip.value.destination,
+      destination_iata_code: trip.value.destination_iata_code,
+      start_date: trip.value.start_date,
+      end_date: trip.value.end_date,
+      budget: trip.value.budget,
+      group_size: trip.value.group_size,
+      transport: trip.value.transport,
+      activities: trip.value.activities,
+      other_activity: trip.value.other_activity,
+      special_needs: trip.value.special_needs
+    });
+
+    console.log('Trip details updated in trips table successfully');
+  } catch (error) {
+    console.error('Error updating trip details in trips table:', error);
+    throw error;
   }
 };
 
