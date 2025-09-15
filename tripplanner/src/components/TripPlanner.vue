@@ -5,7 +5,7 @@
         <h3 class="text-lg font-semibold text-gray-800">Recommendations</h3>
         <div class="flex items-center space-x-2">
           <span class="text-sm text-gray-500">{{ tripStore.destination }}</span>
-          <span class="bg-teal-100 text-teal-800 text-xs font-medium px-2.5 py-0.5 rounded">{{ recommendedPlaces.length }} places</span>
+          <span class="bg-secondary1 text-secondary2 text-xs font-medium px-2.5 py-0.5 rounded">{{ recommendedPlaces.length }} places</span>
         </div>
       </div>
       
@@ -17,7 +17,7 @@
               type="text"
               v-model="searchQuery"
               placeholder="Search for places to add to your plan"
-              class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+              class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-secondary2"
               @input="handleSearchInput"
             />
             <svg class="absolute left-3 top-3.5 h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -44,7 +44,7 @@
       <div v-if="searchQuery" class="mb-6">
         <h4 class="text-md font-semibold text-gray-700 mb-3 flex items-center">
           <span>Search Results</span>
-          <span v-if="isSearchingPois" class="ml-2 inline-block h-4 w-4 rounded-full border-2 border-t-teal-600 animate-spin"></span>
+          <span v-if="isSearchingPois" class="ml-2 inline-block h-4 w-4 rounded-full border-2 border-t-secondary2 animate-spin"></span>
         </h4>
         <RecommendationList
           :items="poiSuggestions"
@@ -58,7 +58,7 @@
       <div>
         <h4 class="text-md font-semibold text-gray-700 mb-3 flex items-center">
           <span>Recommended for you</span>
-          <span v-if="isGenerating" class="ml-2 inline-block h-4 w-4 rounded-full border-2 border-t-teal-600 animate-spin"></span>
+          <span v-if="isGenerating" class="ml-2 inline-block h-4 w-4 rounded-full border-2 border-t-secondary2 animate-spin"></span>
         </h4>
         <div v-if="recommendedPlaces.length === 0 && !isGenerating" class="text-center py-6 bg-gray-50 rounded-lg">
           <p class="text-gray-500">No recommendations available yet.</p>
@@ -82,7 +82,7 @@
       </div>
       
       <div v-if="isGenerating" class="flex justify-center items-center p-10">
-        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-500"></div>
+        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-secondary2"></div>
       </div>
       <div v-else-if="tripDays.length === 0" class="text-center text-gray-500 py-10">
         <p class="mb-4">Click "Generate AI" to create a plan.</p>
@@ -115,7 +115,7 @@
 
       <button
         @click="addDay"
-        class="w-full mt-4 py-3 bg-teal-600 text-white rounded-lg hover:bg-teal-700 flex items-center justify-center"
+        class="w-full mt-4 py-3 bg-secondary2 text-white rounded-lg hover:bg-secondary2 flex items-center justify-center"
       >
         <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />

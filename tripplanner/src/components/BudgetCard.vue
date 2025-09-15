@@ -3,7 +3,7 @@
     <h3 class="text-xl font-semibold text-gray-800 mb-5">Budget Overview</h3>
     <div
       class="text-4xl font-extrabold mb-4"
-      :class="remainingBudget < 0 ? 'text-red-500' : 'text-teal-600'"
+      :class="remainingBudget < 0 ? 'text-red-500' : 'text-secondary2'"
     >
       {{ formatCurrency(remainingBudget) }}
     </div>
@@ -25,7 +25,7 @@
         <span>Activities</span>
         <span class="font-semibold text-gray-800">{{ formatCurrency(props.plannedExpenses?.plan || 0) }}</span>
       </div>
-      <div class="flex justify-between pt-1 border-t border-teal-600">
+      <div class="flex justify-between pt-1 border-t border-secondary2">
         <span>Total Spent</span>
         <span class="font-semibold text-gray-800">{{ formatCurrency(props.plannedExpenses?.total || 0) }}</span>
       </div>

@@ -8,10 +8,10 @@
               <input
                 v-model="tripName"
                 type="text"
-                class="text-4xl font-bold text-gray-900 border-b border-gray-300 focus:outline-none focus:border-teal-600 mr-2"
+                class="text-4xl font-bold text-gray-900 border-b border-gray-300 focus:outline-none focus:border-secondary2 mr-2"
                 @keyup.enter="saveTripName"
               />
-              <button @click="saveTripName" class="p-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors">
+              <button @click="saveTripName" class="p-2 bg-secondary2 text-white rounded-lg hover:bg-secondary1 transition-colors">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                   <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
                 </svg>
@@ -24,7 +24,7 @@
             </div>
             <div v-else class="flex items-center">
               <h1 class="text-4xl font-bold text-gray-900">{{ trip?.name || 'Trip Summary' }}</h1>
-              <button @click="startEditName" class="ml-2 p-1 text-gray-500 hover:text-teal-600 transition-colors">
+              <button @click="startEditName" class="ml-2 p-1 text-gray-500 hover:text-secondary2 transition-colors">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                   <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
                 </svg>
@@ -35,7 +35,7 @@
             <button @click="goBack" class="px-4 py-2 bg-white border border-gray-300 text-gray-800 rounded-lg hover:bg-gray-100 transition-colors font-medium">
               Back
             </button>
-            <button @click="saveTrip" class="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors font-semibold shadow-md">
+            <button @click="saveTrip" class="px-4 py-2 bg-secondary2 text-white rounded-lg hover:bg-secondary1 transition-colors font-semibold shadow-md">
               Save Trip
             </button>
             <TripPdfGenerator
@@ -64,7 +64,7 @@
               <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
                 <div class="flex items-center justify-between mb-2">
                   <h3 class="text-lg font-semibold text-gray-800">Trip Details</h3>
-                  <button @click="editTripDetails" class="text-teal-600 hover:text-teal-800">
+                  <button @click="editTripDetails" class="text-secondary2 hover:text-secondary1">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                       <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
                     </svg>
@@ -82,18 +82,18 @@
               <div class="bg-gray-50 rounded-lg p-4 border border-gray-200" :class="{'opacity-50': !flights || flights.length === 0 || (flights.length > 0 && flights.some(f => !f.airline || f.airline === 'Unknown Airline'))}">
                 <div class="flex items-center justify-between mb-2">
                   <h3 class="text-lg font-semibold text-gray-800">Flight{{ flights && flights.length > 1 ? 's' : '' }}</h3>
-                  <button v-if="flights && flights.length > 0 && flights.some(f => f.airline && f.airline !== 'Unknown Airline')" @click="editFlight" class="text-teal-600 hover:text-teal-800">
+                  <button v-if="flights && flights.length > 0 && flights.some(f => f.airline && f.airline !== 'Unknown Airline')" @click="editFlight" class="text-secondary1 hover:text-secondary2">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                       <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
                     </svg>
                   </button>
-                  <button v-else @click="editFlight" class="text-teal-600 hover:text-teal-800 px-2 py-1 text-xs rounded-full bg-teal-50">
+                  <button v-else @click="editFlight" class="text-secondary2 hover:text-secondary1 px-2 py-1 text-xs rounded-full bg-white">
                     Add Flight
                   </button>
                 </div>
                 <div v-if="flights && flights.length > 0 && flights.some(f => f.airline && f.airline !== 'Unknown Airline')" class="space-y-3 text-sm">
-                  <div v-for="(flight, index) in flights" :key="flight.id || index" class="border-l-4 border-teal-500 pl-3">
-                    <div v-if="flights.length > 1" class="text-xs text-teal-600 font-medium mb-1">
+                  <div v-for="(flight, index) in flights" :key="flight.id || index" class="border-l-4 border-secondary2 pl-3">
+                    <div v-if="flights.length > 1" class="text-xs text-secondary2 font-medium mb-1">
                       Leg {{ flight.leg_number || (index + 1) }} - {{ getFlightTypeLabel(flight.flight_type) }}
                     </div>
                     <p><span class="font-medium">Route:</span> {{ flight.from_city || flight.fromCity || '?' }} ({{ flight.from_iata || flight.fromIata || '?' }}) → {{ flight.to_city || flight.toCity || '?' }} ({{ flight.to_iata || flight.toIata || '?' }})</p>
@@ -118,12 +118,12 @@
               <div class="bg-gray-50 rounded-lg p-4 border border-gray-200" :class="{'opacity-50': !hotel || hotel.name === 'Skipped'}">
                 <div class="flex items-center justify-between mb-2">
                   <h3 class="text-lg font-semibold text-gray-800">Hotel</h3>
-                  <button v-if="hotel && hotel.name !== 'Skipped'" @click="editHotel" class="text-teal-600 hover:text-teal-800">
+                  <button v-if="hotel && hotel.name !== 'Skipped'" @click="editHotel" class="text-secondary2 hover:text-secondary1">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                       <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
                     </svg>
                   </button>
-                  <button v-else @click="editHotel" class="text-teal-600 hover:text-teal-800 px-2 py-1 text-xs rounded-full bg-teal-50">
+                  <button v-else @click="editHotel" class="text-secondary2 hover:text-secondary1 px-2 py-1 text-xs rounded-full bg-white">
                     Add Hotel
                   </button>
                 </div>
@@ -168,7 +168,7 @@
                   :class="[
                     'px-5 py-2 text-sm font-medium rounded-full transition-all duration-300 flex items-center',
                     selectedView === option.value
-                      ? 'bg-teal-600 text-white shadow-md scale-105'
+                      ? 'bg-secondary2 text-white shadow-md scale-105'
                       : 'text-gray-700 hover:bg-white'
                   ]"
                 >
@@ -279,7 +279,7 @@
           <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
             <h3 class="text-lg font-semibold text-gray-800 mb-2">Flights</h3>
             <div v-if="flights && flights.length > 0 && flights.some(f => f.airline && f.airline !== 'Unknown Airline')" class="space-y-3 text-sm">
-              <div v-for="(flight, index) in flights" :key="flight.id || index" class="border-l-4 border-teal-500 pl-3">
+              <div v-for="(flight, index) in flights" :key="flight.id || index" class="border-l-4 border-secondary2 pl-3">
                 <p><span class="font-medium">Route:</span> {{ flight.from_city || flight.fromCity || '?' }} ({{ flight.from_iata || flight.fromIata || '?' }}) → {{ flight.to_city || flight.toCity || '?' }} ({{ flight.to_iata || flight.toIata || '?' }})</p>
                 <p><span class="font-medium">Airline:</span> {{ flight.airline || 'Unknown Airline' }}</p>
                 <p><span class="font-medium">Departure:</span> {{ formatDateTime(flight.departure_time || flight.departureTime) }}</p>

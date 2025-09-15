@@ -56,7 +56,7 @@
           <button
             @click="saveTripPlan"
             type="button"
-            class="w-full sm:w-auto px-6 py-2 rounded-full text-sm font-medium text-white bg-teal-600 hover:bg-teal-700 shadow-md transition-all duration-300"
+            class="w-full sm:w-auto px-6 py-2 rounded-full text-sm font-medium text-white bg-secondary2 hover:bg-secondary2 shadow-md transition-all duration-300"
           >
             Save Trip Plan
           </button>

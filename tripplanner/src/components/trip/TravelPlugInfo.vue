@@ -2,18 +2,18 @@
   <div class="bg-white rounded-lg shadow-md p-4 mt-4">
     <h3 class="text-xl font-semibold text-gray-800 mb-3">Power Plug Information</h3>
     <div v-if="isLoading" class="text-center py-4">
-      <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-500 mx-auto mb-2"></div>
+      <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-secondary2 mx-auto mb-2"></div>
       <p class="text-gray-500">Loading plug information...</p>
     </div>
     <div v-else-if="plugInfo" class="space-y-4">
       <div class="flex items-center">
         <div class="bg-blue-50 rounded-lg p-4 border border-blue-100 w-full">
-          <h4 class="font-medium text-blue-800 mb-3">Travel Adapter for {{ destination }}</h4>
+          <h4 class="font-medium text-secondary2 mb-3">Travel Adapter for {{ destination }}</h4>
           <div class="flex items-center justify-between">
             <div class="flex items-center space-x-4">
               <div class="flex flex-wrap gap-2">
                 <span v-for="(type, index) in plugInfo.types.slice(0, 2)" :key="index"
-                      class="inline-flex items-center px-2 py-1 bg-white rounded-md border border-gray-200 text-sm font-semibold text-teal-700">
+                      class="inline-flex items-center px-2 py-1 bg-white rounded-md border border-gray-200 text-sm font-semibold text-secondary2">
                   Type {{ type }}
                 </span>
               </div>

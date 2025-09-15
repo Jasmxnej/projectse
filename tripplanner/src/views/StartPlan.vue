@@ -88,7 +88,7 @@
                 :class="[
                   'flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium border shadow-sm transition-all duration-300 transform hover:scale-[1.02]',
                   formData.activities.includes(tag.label)
-                    ? 'bg-secondary1 text-white'
+                    ? 'bg-secondary2 text-white'
                     : 'bg-white text-secondary2 border-[#364C84]'
                 ]"
               >

@@ -3,27 +3,27 @@
     <h3 class="text-xl font-semibold text-gray-800 mb-3">Weather-Based Packing Suggestions</h3>
     <div v-if="packingTips.length > 0" class="space-y-6">
       <!-- Tips section with improved readability -->
-      <div class="bg-blue-50 rounded-lg p-5 border border-blue-100">
-        <h4 class="font-medium text-blue-800 mb-3 text-lg">Weather Tips</h4>
+      <div class="bg-secondary1 rounded-lg p-5 border border-blue-100">
+        <h4 class="font-medium text-secondary2 mb-3 text-lg">Weather Tips</h4>
         <ul class="space-y-3">
           <li v-for="(tip, index) in packingTips" :key="index" class="flex items-start">
-            <span class="text-blue-600 mr-3 mt-1 text-lg">•</span>
+            <span class="text-secondary2 mr-3 mt-1 text-lg">•</span>
             <p class="text-gray-700 leading-relaxed">{{ tip }}</p>
           </li>
         </ul>
       </div>
       
       <!-- Essential items section -->
-      <div class="bg-teal-50 rounded-lg p-5 border border-teal-100">
-        <h4 class="font-medium text-teal-800 mb-3 text-lg">Essential Items</h4>
+      <div class="bg-secondary1 rounded-lg p-5 border border-secondary1">
+        <h4 class="font-medium text-secondary2 mb-3 text-lg">Essential Items</h4>
         <div class="flex flex-wrap gap-2">
           <button
             v-for="(item, index) in quickAddItems"
             :key="index"
             @click="addToPackingList(item)"
-            class="px-4 py-2 bg-white border border-teal-200 text-teal-800 rounded-lg hover:bg-teal-100 transition-colors flex items-center shadow-sm"
+            class="px-4 py-2 bg-white border border-secondary1 text-secondary2 rounded-lg hover:bg-secondary1 transition-colors flex items-center shadow-sm"
           >
-            <span class="mr-2 text-teal-600 font-bold">+</span> {{ item }}
+            <span class="mr-2 text-secondary2 font-bold">+</span> {{ item }}
           </button>
         </div>
       </div>

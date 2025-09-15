@@ -3,13 +3,20 @@
     <Navbar />
     
     <!-- Hero Section - Light Green Background -->
-    <section class="bg-gray-900 py-20">
-      <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center font-playfair">
-        <h1 class="text-4xl lg:text-4xl font-bold text-background mt-10 mb-4">
-          About Us
-        </h1>
-      </div>
-    </section>
+   <section class="relative overflow-hidden h-70 py-20">
+  <!-- Background Image with 50% opacity -->
+  <div 
+    class="absolute top-0 left-0 w-full h-full bg-cover bg-center bg-no-repeat opacity-50"
+    :style="{ backgroundImage: `url(${mountain})` }"
+  ></div>
+  
+  <!-- Content -->
+  <div class="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center font-playfair">
+    <h1 class="text-4xl lg:text-4xl font-bold text-white mt-20 mb-4">
+      About Us
+    </h1>
+  </div>
+</section>
 
     <!-- Mission Section - White Background -->
     <section class="bg-background py-16">
@@ -137,6 +144,7 @@
 <script setup lang="ts">
 import Navbar from '../components/Nav.vue'
 import Footer from '@/components/Footer.vue'
+import mountain from '@/assets/mountains.webp'
 
 interface Value {
   title: string

@@ -63,7 +63,7 @@
            <!-- More Details Button  -->
         <button
           @click.stop="$emit('view-details')"
-          class="text-sm text-teal-600 hover:text-teal-800 transition-colors px-3 py-1 bg-teal-50 hover:bg-teal-100 rounded-md flex items-center ml-2 shadow-sm"
+          class="text-sm text-secondary2 hover:text-secondary1 transition-colors px-3 py-1 bg-secondary1 hover:bg-secondary2 rounded-md flex items-center ml-2 shadow-sm"
         >
           <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
             <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
@@ -77,7 +77,7 @@
           <!-- Edit button -->
           <button
             @click.stop="isEditing = true"
-            class="text-sm text-blue-600 hover:text-blue-800 transition-colors px-2 py-1 bg-blue-50 rounded-md flex items-center"
+            class="text-sm text-secondary2 hover:text-secondary1 transition-colors px-2 py-1 bg-blue-50 rounded-md flex items-center"
           >
             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
               <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />

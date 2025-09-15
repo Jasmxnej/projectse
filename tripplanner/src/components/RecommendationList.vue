@@ -1,7 +1,7 @@
 <template>
   <div class="space-y-3 ">
     <div v-if="isLoading" class="flex justify-center items-center p-4">
-      <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-500"></div>
+      <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-secondary2"></div>
     </div>
     <div v-else-if="items.length === 0" class="text-center text-gray-500 py-3 text-sm">
       <p v-if="searchActive">No matching places found</p>
@@ -12,7 +12,7 @@
         v-for="item in items"
         :key="item.id"
         class="flex items-center space-x-3 p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-all duration-200 hover:shadow-md"
-        :class="{ 'bg-teal-50 border-teal-200': item.added }"
+        :class="{ 'bg-secondary1 border-secondary2': item.added }"
       >
         <img
           :src="item.image || item.cachedImageUrl || `https://via.placeholder.com/300x200/e5e7eb/6b7280?text=${encodeURIComponent(item.name)}`"
@@ -42,7 +42,7 @@
           <button
             v-if="!item.added"
             @click="$emit('add', item)"
-            class="text-teal-600 hover:text-teal-700 p-2 rounded-full hover:bg-teal-50 transition-colors"
+            class="text-white hover:text-secondary2 p-2 rounded-full hover:bg-secondary1 transition-colors"
             title="Add to plan"
           >
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -51,7 +51,7 @@
           </button>
           <button
             v-else
-            class="text-green-600 p-2 rounded-full bg-green-50"
+            class="text-secondary2 p-2 rounded-full bg-secondary1"
             disabled
             title="Added to plan"
           >
@@ -61,7 +61,7 @@
           </button>
           <button
             @click="$emit('select', item)"
-            class="text-blue-600 hover:text-blue-700 p-2 rounded-full hover:bg-blue-50 transition-colors"
+            class="text-secondary1 hover:text-secondary2 p-2 rounded-full hover:bg-blue-50 transition-colors"
             title="View details"
           >
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

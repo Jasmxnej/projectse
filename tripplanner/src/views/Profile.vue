@@ -1,17 +1,17 @@
 <template>
   <Navbar />
-  <div class="min-h-screen flex items-center justify-center px-4">
+  <div class="min-h-screen bg-background flex items-center justify-center px-4">
     <div class="backdrop-blur-lg bg-white/80 border border-white/40 rounded-2xl shadow-2xl p-10 w-full max-w-lg space-y-6">
-      <h1 class="text-4xl text-center font-cardo font-bold text-[#17637B]">My Profile</h1>
+      <h1 class="text-4xl text-center font-cardo font-bold text-secondary2">My Profile</h1>
 
       <div v-if="user" class="space-y-1 text-[#333] font-didact text-[1.05rem] font-medium leading-relaxed">
-        <p><span class="font-semibold text-[#17637B]">User Name:</span> {{ user.username }}</p>
-        <p><span class="font-semibold text-[#17637B]">Email:</span> {{ user.email }}</p>
+        <p><span class="font-semibold text-secondary2">User Name:</span> {{ user.username }}</p>
+        <p><span class="font-semibold text-secondary2">Email:</span> {{ user.email }}</p>
       </div>
 
       <button
         @click="showChangePassword = !showChangePassword"
-        class="w-full py-2.5 bg-[#17637B] hover:bg-[#134e63] transition-all text-white rounded-full shadow-md font-didact text-base font-medium"
+        class="w-full py-2.5 bg-secondary2 hover:bg-seco transition-all text-white rounded-full shadow-md font-didact text-base font-medium"
       >
         {{ showChangePassword ? 'Cancel' : 'Change Password' }}
       </button>

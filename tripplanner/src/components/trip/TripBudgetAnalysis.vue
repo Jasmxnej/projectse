@@ -12,7 +12,7 @@
             </div>
             <div class="flex justify-between items-center">
               <p class="font-medium">Planned Expenses:</p>
-              <p class="text-xl font-bold text-teal-600">{{ formatPrice(plannedExpenses.total) }}</p>
+              <p class="text-xl font-bold text-secondary2">{{ formatPrice(plannedExpenses.total) }}</p>
             </div>
             <div class="flex justify-between items-center pt-2 border-t">
               <p class="font-medium">Remaining Budget:</p>

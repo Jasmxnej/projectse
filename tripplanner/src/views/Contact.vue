@@ -2,30 +2,20 @@
   <Nav/>
   <div class="min-h-screen bg-background ">
     <!-- Header -->
-   <section class="relative py-20 overflow-hidden bg-white">
-    <!-- Banner with circle -->
-    <div class="relative flex items-center justify-center">
-      <svg 
-        viewBox="0 0 1400 300" 
-        class="w-full max-w-6xl h-auto"
-        preserveAspectRatio="xMidYMid meet"
-      >
-        <!-- Rectangle banner -->
-        <rect x="0" y="100" width="1400" height="100" fill="#000000" />
-        
-        <!-- Circle in the middle -->
-        <circle cx="700" cy="150" r="100" fill="#000000" />
-      </svg>
-      
-      <!-- Text overlay -->
-      <div class="absolute inset-0 flex items-center justify-center">
-        <h1 class="text-3xl lg:text-4xl font-bold text-white lowercase">
-          contact us
-        </h1>
-      </div>
+    <section class="relative overflow-hidden h-70 py-20">
+    <!-- Background Image with 50% opacity -->
+   <div 
+  class="absolute top-0 left-0 w-full h-full bg-cover bg-center bg-no-repeat opacity-50"
+  :style="{ backgroundImage: `url(${mountain})` }"
+></div>
+    
+    <!-- Content -->
+    <div class="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center font-playfair">
+      <h1 class="text-4xl lg:text-4xl font-bold text-white mt-20 mb-4">
+        Contact
+      </h1>
     </div>
   </section>
-
 
     <!-- Main Content -->
     <div class="max-w-7xl mx-auto px-4 py-12">
@@ -244,6 +234,8 @@
 import { ref, reactive } from 'vue'
 import Nav from '@/components/Nav.vue'
 import Footer from '@/components/Footer.vue'
+import mountain from '@/assets/mountains.webp'
+
 interface ContactForm {
   name: string
   email: string

@@ -1,6 +1,28 @@
 <template>
   <div class="bg-gray-50 min-h-screen font-sans text-gray-800">
-    <main class="p-4 lg:p-8" ref="summaryContent">
+    <!-- Floating Navigation Bar -->
+    <div class="fixed top-16 left-0 right-0 z-50">
+  <div class="bg-white backdrop-blur-md rounded-none px-6 py-2 mx-4">
+    <div class="flex items-center justify-center space-x-1 max-w-6xl mx-auto">
+      <button
+        v-for="option in viewOptions"
+        :key="option.value"
+        type="button"
+        @click="scrollToSection(option.value)"
+        :class="[
+          'px-4 py-2 text-sm font-medium rounded-full transition-all duration-300 whitespace-nowrap',
+          activeSection === option.value
+            ? 'bg-secondary2 text-white shadow-md scale-105'
+            : 'text-gray-700 hover:bg-gray-100 hover:scale-105'
+        ]"
+      >
+        {{ option.label }}
+      </button>
+    </div>
+  </div>
+</div>
+
+    <main class="p-4 lg:p-8 pt-24" ref="summaryContent">
       <div class="max-w-7xl mx-auto">
         <div class="flex justify-between items-center mb-8">
           <h1 class="text-4xl font-bold text-gray-900">Trip Summary</h1>
@@ -8,7 +30,7 @@
             <button @click="goBack" class="px-4 py-2 bg-white border border-gray-300 text-gray-800 rounded-lg hover:bg-gray-100 transition-colors font-medium">
               Back
             </button>
-            <button @click="saveTrip" class="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors font-semibold shadow-md">
+            <button @click="saveTrip" class="px-4 py-2 bg-secondary2 text-white rounded-lg hover:bg-secondary1 transition-colors font-semibold shadow-md">
               Save Trip
             </button>
             <TripPdfGenerator
@@ -31,7 +53,7 @@
 
         <div v-if="!loading && trip" class="space-y-8">
           <!-- Trip Details & Budget -->
-          <div class="grid grid-cols-1 xl:grid-cols-3 gap-8">
+          <div id="trip-details-section" class="grid grid-cols-1 xl:grid-cols-3 gap-8 scroll-mt-32">
             <div class="xl:col-span-2 bg-white rounded-xl shadow-lg p-6">
               <h2 class="text-2xl font-bold text-gray-800 mb-4">Trip Details</h2>
               <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-gray-700">
@@ -51,124 +73,130 @@
             </div>
           </div>
 
-          <!-- All Trip Data in Tabs -->
-          <div class="bg-white rounded-xl shadow-lg p-6 mt-6">
-            <div class="w-full mt-4 mb-6">
-              <div class="bg-gray-100 p-1 rounded-full flex gap-2 shadow-inner justify-center">
-                <button
-                  v-for="option in viewOptions"
-                  :key="option.value"
-                  type="button"
-                  @click="selectedView = option.value"
-                  :class="[
-                    'px-5 py-2 text-sm font-medium rounded-full transition-all duration-300',
-                    selectedView === option.value
-                      ? 'bg-teal-600 text-white shadow-md scale-105'
-                      : 'text-gray-700 hover:bg-white'
-                  ]"
-                >
-                  {{ option.label }}
-                </button>
-              </div>
+          <!-- Flight Details Section -->
+          <section id="flight-section" class="bg-white rounded-xl shadow-lg p-6 scroll-mt-32">
+            <h2 class="text-2xl font-bold text-gray-800 mb-6 flex items-center">
+              <span class="bg-secondary1 text-secondary2 rounded-full w-8 h-8 flex items-center justify-center text-sm font-bold mr-3">✈️</span>
+              Flight Details
+            </h2>
+            <div v-if="!flights || flights.length === 0 || (flights.length > 0 && flights.some(f => !f.airline || f.airline === 'Unknown Airline'))" class="text-center py-8 text-gray-500 bg-gray-50 rounded-xl">
+              <div class="text-6xl mb-4"></div>
+              <p class="text-lg">You haven't selected a flight yet.</p>
             </div>
-            
-            <!-- Flight Details Tab -->
-            <div v-if="selectedView === 'flight'">
-              <div v-if="!flights || flights.length === 0 || (flights.length > 0 && flights.some(f => !f.airline || f.airline === 'Unknown Airline'))" class="text-center py-8 text-gray-500">
-                <p class="text-lg">You haven't selected a flight yet.</p>
-           
-              </div>
-              <FlightDetailsCard v-else :flights="flights" :editable="false" />
-            </div>
+            <FlightDetailsCard v-else :flights="flights" :editable="false" />
+          </section>
 
-            <!-- Hotel Details Tab -->
-            <div v-else-if="selectedView === 'hotel'">
-              <div v-if="!hotel || hotel.name === 'Skipped'" class="text-center py-8 text-gray-500">
-                <p class="text-lg">You haven't selected a hotel yet.</p>
-            
-              </div>
-              <HotelDetailsCard v-else :hotel="hotel" :destination="trip?.destination" :editable="false" />
+          <!-- Hotel Details Section -->
+          <section id="hotel-section" class="bg-white rounded-xl shadow-lg p-6 scroll-mt-32">
+            <h2 class="text-2xl font-bold text-gray-800 mb-6 flex items-center">
+              <span class="bg-secondary1 text-secondary2 rounded-full w-8 h-8 flex items-center justify-center text-sm font-bold mr-3"></span>
+              Hotel Details
+            </h2>
+            <div v-if="!hotel || hotel.name === 'Skipped'" class="text-center py-8 text-gray-500 bg-gray-50 rounded-xl">
+              <div class="text-6xl mb-4"></div>
+              <p class="text-lg">You haven't selected a hotel yet.</p>
             </div>
-            
-            <!-- Daily Schedule Tab -->
-            <div v-else-if="selectedView === 'daily'">
-              <h2 class="text-2xl font-bold text-gray-800 mb-4">Daily Schedule</h2>
-              <div v-if="schedule && schedule.length > 0" class="space-y-6">
-                <div v-for="day in schedule" :key="day.id" class="bg-gray-50 rounded-xl shadow p-4">
-                  <h3 class="text-xl font-bold text-teal-700 mb-4">Day {{ day.day }}</h3>
-                  
-                  <div v-if="day.activities && day.activities.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    <div
-                      v-for="activity in parseActivities(day.activities)"
-                      :key="activity.id"
-                      class="border border-gray-200 rounded-lg overflow-hidden bg-white shadow-sm transition-shadow"
-                    >
-                      <img
-                        :src="activity.image || `https://source.unsplash.com/640x360/?${activity.name},travel`"
-                        :alt="activity.name"
-                        class="w-full h-40 object-cover"
-                        @error="handleActivityImageError"
-                      />
-                      <div class="p-4">
-                        <div class="flex justify-between items-start">
-                          <h4 class="font-bold text-lg text-gray-800">{{ activity.name }}</h4>
-                          <span class="text-sm font-medium bg-teal-100 text-teal-800 px-2 py-1 rounded">{{ activity.time }}</span>
-                        </div>
-                        <p v-if="activity.location" class="text-sm text-gray-600 mt-1">
-                          <span class="inline-block mr-1">📍</span>{{ activity.location }}
-                        </p>
-                        <p v-if="activity.description" class="text-gray-700 text-sm mt-2 mb-3">{{ activity.description }}</p>
-                        <p v-if="activity.cost" class="font-semibold text-teal-600">{{ formatPrice(activity.cost) }}</p>
+            <HotelDetailsCard v-else :hotel="hotel" :destination="trip?.destination" :editable="false" />
+          </section>
+          
+          <!-- Daily Schedule Section -->
+          <section id="daily-section" class="bg-white rounded-xl shadow-lg p-6 scroll-mt-32">
+            <h2 class="text-2xl font-bold text-gray-800 mb-6 flex items-center">
+              <span class="bg-secondary1 text-secondary2 rounded-full w-8 h-8 flex items-center justify-center text-sm font-bold mr-3"></span>
+              Daily Schedule
+            </h2>
+            <div v-if="schedule && schedule.length > 0" class="space-y-6">
+              <div v-for="day in schedule" :key="day.id" class="bg-gray-50 rounded-xl shadow p-4">
+                <h3 class="text-xl font-bold text-secondary2 mb-4">Day {{ day.day }}</h3>
+                
+                <div v-if="day.activities && day.activities.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  <div
+                    v-for="activity in parseActivities(day.activities)"
+                    :key="activity.id"
+                    class="border border-gray-200 rounded-lg overflow-hidden bg-white shadow-sm transition-shadow hover:shadow-md"
+                  >
+                    <img
+                      :src="activity.image || `https://source.unsplash.com/640x360/?${activity.name},travel`"
+                      :alt="activity.name"
+                      class="w-full h-40 object-cover"
+                      @error="handleActivityImageError"
+                    />
+                    <div class="p-4">
+                      <div class="flex justify-between items-start">
+                        <h4 class="font-bold text-lg text-gray-800">{{ activity.name }}</h4>
+                        <span class="text-sm font-medium bg-secondary1 text-secondary2 px-2 py-1 rounded">{{ activity.time }}</span>
                       </div>
+                      <p v-if="activity.location" class="text-sm text-gray-600 mt-1">
+                        <span class="inline-block mr-1">📍</span>{{ activity.location }}
+                      </p>
+                      <p v-if="activity.description" class="text-gray-700 text-sm mt-2 mb-3">{{ activity.description }}</p>
+                      <p v-if="activity.cost" class="font-semibold text-secondary2">{{ formatPrice(activity.cost) }}</p>
                     </div>
                   </div>
-                  <div v-else class="text-center py-4 text-gray-500">
-                    <p>No activities planned for this day.</p>
-                  </div>
+                </div>
+                <div v-else class="text-center py-4 text-gray-500">
+                  <p>No activities planned for this day.</p>
                 </div>
               </div>
-              <div v-else class="text-center py-8 text-gray-500 bg-gray-50 rounded-xl">
-                <p>No daily schedule has been created yet.</p>
-              </div>
             </div>
-            
-            <!-- Budget Tab -->
-            <div v-else-if="selectedView === 'budget'">
-              <TripBudgetAnalysis 
-                :total-budget="trip.budget" 
-                :planned-expenses="plannedExpenses" 
-                :destination="trip.destination" 
-              />
+            <div v-else class="text-center py-8 text-gray-500 bg-gray-50 rounded-xl">
+              <div class="text-6xl mb-4"></div>
+              <p class="text-lg">No daily schedule has been created yet.</p>
             </div>
-            
-            <!-- Weather Forecast Tab -->
-            <div v-else-if="selectedView === 'weather'">
-              <TripWeatherForecast
-                :destination="trip.destination"
-                :start-date="trip.start_date"
-                :end-date="trip.end_date"
-                @add-to-packing="addPackingItemFromSuggestion"
-                ref="weatherForecastComponent"
-              />
-            </div>
-            
-            <!-- Packing List Tab -->
-            <div v-else-if="selectedView === 'packing'">
-              <TripPackingList
-                :trip-id="trip.id"
-                :destination="trip.destination"
-                ref="packingListComponent"
-              />
-            </div>
-            
-            <!-- Local Recommendations Tab -->
-            <div v-else-if="selectedView === 'recommendations'">
-              <TripLocalRecommendations
-                :destination="trip.destination"
-                ref="localRecommendationsComponent"
-              />
-            </div>
-          </div>
+          </section>
+          
+          <!-- Budget Analysis Section -->
+          <section id="budget-section" class="bg-white rounded-xl shadow-lg p-6 scroll-mt-32">
+            <h2 class="text-2xl font-bold text-gray-800 mb-6 flex items-center">
+              <span class="bg-secondary1 text-secondary2 rounded-full w-8 h-8 flex items-center justify-center text-sm font-bold mr-3"></span>
+              Budget Analysis
+            </h2>
+            <TripBudgetAnalysis 
+              :total-budget="trip.budget" 
+              :planned-expenses="plannedExpenses" 
+              :destination="trip.destination" 
+            />
+          </section>
+          
+          <!-- Weather Forecast Section -->
+          <section id="weather-section" class="bg-white rounded-xl shadow-lg p-6 scroll-mt-32">
+            <h2 class="text-2xl font-bold text-gray-800 mb-6 flex items-center">
+              <span class="bg-secondary1 text-secondary2 rounded-full w-8 h-8 flex items-center justify-center text-sm font-bold mr-3"></span>
+              Weather Forecast
+            </h2>
+            <TripWeatherForecast
+              :destination="trip.destination"
+              :start-date="trip.start_date"
+              :end-date="trip.end_date"
+              @add-to-packing="addPackingItemFromSuggestion"
+              ref="weatherForecastComponent"
+            />
+          </section>
+          
+          <!-- Packing List Section -->
+          <section id="packing-section" class="bg-white rounded-xl shadow-lg p-6 scroll-mt-32">
+            <h2 class="text-2xl font-bold text-gray-800 mb-6 flex items-center">
+              <span class="bg-secondary1 text-secondary2 rounded-full w-8 h-8 flex items-center justify-center text-sm font-bold mr-3"></span>
+              Packing List
+            </h2>
+            <TripPackingList
+              :trip-id="trip.id"
+              :destination="trip.destination"
+              ref="packingListComponent"
+            />
+          </section>
+          
+          <!-- Local Recommendations Section -->
+          <section id="recommendations-section" class="bg-white rounded-xl shadow-lg p-6 scroll-mt-32">
+            <h2 class="text-2xl font-bold text-gray-800 mb-6 flex items-center">
+              <span class="bg-secondary1 text-secondary2 rounded-full w-8 h-8 flex items-center justify-center text-sm font-bold mr-3"></span>
+              Local Recommendations
+            </h2>
+            <TripLocalRecommendations
+              :destination="trip.destination"
+              ref="localRecommendationsComponent"
+            />
+          </section>
         </div>
       </div>
     </main>
@@ -176,7 +204,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed, watch } from 'vue';
+import { ref, onMounted, computed, watch, onUnmounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import axios from 'axios';
 import { useTripStore } from '@/stores/trip';
@@ -204,16 +232,12 @@ const summaryContent = ref<HTMLElement | null>(null);
 const plannedExpenses = computed(() => tripStore.plannedExpenses);
 const packingListComponent = ref<any>(null);
 
-const selectedView = ref('flight');
+// Navigation state
+const activeSection = ref('flight');
 
 // Preload components data on mount
 const weatherForecastComponent = ref<any>(null);
 const localRecommendationsComponent = ref<any>(null);
-
-// Watch for changes to selectedView to auto-generate content when needed
-watch(selectedView, (newView) => {
-  // No need to trigger loading on tab change since we preload data
-});
 
 const viewOptions = [
   { label: 'Flight', value: 'flight' },
@@ -224,6 +248,64 @@ const viewOptions = [
   { label: 'Packing', value: 'packing' },
   { label: 'Recommendations', value: 'recommendations' },
 ];
+
+// Smooth scroll to section function
+const scrollToSection = (sectionValue: string) => {
+  const sectionId = `${sectionValue}-section`;
+  const element = document.getElementById(sectionId);
+  
+  if (element) {
+    // Update active section immediately for better UX
+    activeSection.value = sectionValue;
+    
+    // Smooth scroll with offset for fixed header
+    element.scrollIntoView({
+      behavior: 'smooth',
+      block: 'start',
+    });
+
+    // Add a subtle animation to the section when scrolled to
+    element.classList.add('ring-2', 'ring-teal-200', 'ring-opacity-50');
+    setTimeout(() => {
+      element.classList.remove('ring-2', 'ring-teal-200', 'ring-opacity-50');
+    }, 2000);
+  }
+};
+
+// Intersection Observer for active section detection
+const observeSections = () => {
+  const sections = viewOptions.map(option => document.getElementById(`${option.value}-section`)).filter(Boolean);
+  
+  if (sections.length === 0) return;
+
+  const observer = new IntersectionObserver(
+    (entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting && entry.intersectionRatio > 0.5) {
+          const sectionId = entry.target.id;
+          const sectionValue = sectionId.replace('-section', '');
+          activeSection.value = sectionValue;
+        }
+      });
+    },
+    {
+      threshold: [0.3, 0.7],
+      rootMargin: '-100px 0px -100px 0px', // Account for fixed header
+    }
+  );
+
+  sections.forEach((section) => {
+    if (section) observer.observe(section);
+  });
+
+  // Store observer for cleanup
+  return observer;
+};
+
+// Watch for changes to selectedView to auto-generate content when needed
+watch(activeSection, (newSection) => {
+  console.log('Active section changed to:', newSection);
+});
 
 const fetchTripSummary = async () => {
   loading.value = true;
@@ -263,9 +345,6 @@ const fetchTripSummary = async () => {
       special_needs: tripStore.specialNeeds,
     };
 
-
-
-    
     // Ensure flight data is properly formatted with ALL database fields
     if (tripStore.flights.length > 0) {
       flights.value = tripStore.flights.map((flightData, index) => {
@@ -399,48 +478,6 @@ const formatPrice = (price: number | string | undefined | null) => {
     return new Intl.NumberFormat('th-TH', { style: 'currency', currency: 'THB', minimumFractionDigits: 2 }).format(numPrice);
   } catch (error) {
     console.error('Error formatting price:', price, error);
-    return 'N/A';
-  }
-};
-
-const formatDateTime = (dateString: string | undefined | null) => {
-  if (!dateString) return 'N/A';
-  
-  try {
-    const date = new Date(dateString);
-    // Check if date is valid
-    if (isNaN(date.getTime())) {
-      return 'Invalid Date';
-    }
-    return date.toLocaleString(undefined, { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' });
-  } catch (error) {
-    console.error('Error formatting datetime:', dateString, error);
-    return 'Invalid Date';
-  }
-};
-
-const formatDuration = (duration: string | undefined | null) => {
-  if (!duration) return 'N/A';
-  
-  try {
-    // Parse ISO 8601 duration format (PT1H30M)
-    const match = duration.match(/PT(?:(\d+)H)?(?:(\d+)M)?/);
-    if (match) {
-      const hours = match[1] ? parseInt(match[1]) : 0;
-      const minutes = match[2] ? parseInt(match[2]) : 0;
-      
-      if (hours > 0 && minutes > 0) {
-        return `${hours}h ${minutes}m`;
-      } else if (hours > 0) {
-        return `${hours}h`;
-      } else if (minutes > 0) {
-        return `${minutes}m`;
-      }
-    }
-    
-    return duration;
-  } catch (error) {
-    console.error('Error formatting duration:', duration, error);
     return 'N/A';
   }
 };
@@ -635,11 +672,17 @@ const addPackingItemFromSuggestion = (itemName: string) => {
   }
 };
 
+// Intersection observer instance
+let sectionObserver: IntersectionObserver | null = null;
+
 onMounted(async () => {
   await fetchTripSummary();
 
-  // Wait a short time for components to be mounted
+  // Wait for DOM to be fully rendered before setting up intersection observer
   setTimeout(() => {
+    // Set up intersection observer for active section detection
+    sectionObserver = observeSections();
+    
     // Preload weather and recommendations data
     if (trip.value && trip.value.destination) {
       // This will trigger data loading in the components even if they're not visible
@@ -655,4 +698,122 @@ onMounted(async () => {
     }
   }, 500);
 });
+
+// Cleanup intersection observer on unmount
+onUnmounted(() => {
+  if (sectionObserver) {
+    sectionObserver.disconnect();
+    sectionObserver = null;
+  }
+});
 </script>
+
+<style scoped>
+/* Smooth scrolling enhancement */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Enhanced button hover effects */
+button {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+button:hover {
+  transform: translateY(-1px);
+}
+
+/* Section highlight animation */
+section {
+  transition: all 0.3s ease-in-out;
+}
+
+/* Floating navigation enhancement */
+.backdrop-blur-md {
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+/* Custom scrollbar for webkit browsers */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Smooth scroll margin for sections */
+.scroll-mt-32 {
+  scroll-margin-top: 8rem;
+}
+
+/* Enhanced shadow effects */
+.shadow-lg {
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+/* Loading animation */
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.animate-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Section highlight ring effect */
+.ring-2 {
+  transition: all 0.3s ease-in-out;
+}
+
+/* Active section indicator enhancement */
+.scale-105 {
+  transform: scale(1.05);
+}
+
+/* Hover effects for cards */
+.hover\\:shadow-md:hover {
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  transform: translateY(-2px);
+}
+
+/* Mobile responsive enhancements */
+@media (max-width: 768px) {
+  .fixed.top-6 {
+    top: 1rem;
+    left: 1rem;
+    right: 1rem;
+    transform: none;
+  }
+  
+  .fixed.top-6 > div {
+    width: 100%;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  
+  .fixed.top-6 > div::-webkit-scrollbar {
+    display: none;
+  }
+  
+  .scroll-mt-32 {
+    scroll-margin-top: 6rem;
+  }
+}
+</style>

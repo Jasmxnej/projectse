@@ -5,7 +5,7 @@
       <button
         v-if="editable"
         @click="$emit('edit')"
-        class="px-3 py-1 bg-teal-600 text-white rounded-lg transition-colors text-sm edit-button"
+        class="px-3 py-1 bg-secondary2 text-white rounded-lg transition-colors text-sm edit-button"
       >
         Edit Flight
       </button>
@@ -16,7 +16,7 @@
           <div class="space-y-2">
             <div class="flex items-center space-x-2">
               <p class="text-xl font-bold text-gray-800">{{ flight.airline || 'Airline not specified' }}</p>
-              <span v-if="flights.length > 1" class="text-sm bg-teal-100 text-teal-800 px-2 py-1 rounded-full">
+              <span v-if="flights.length > 1" class="text-sm bg-secondary1 text-secondary2 px-2 py-1 rounded-full">
                 Leg {{ flight.leg_number || (index + 1) }}
               </span>
             </div>
@@ -31,7 +31,7 @@
             </div>
           </div>
           <div class="text-right">
-            <p class="text-2xl font-bold text-teal-600">{{ formatPrice(flight.price || (flight.price && flight.price.total ? flight.price.total : 0)) }}</p>
+            <p class="text-2xl font-bold text-secondary2">{{ formatPrice(flight.price || (flight.price && flight.price.total ? flight.price.total : 0)) }}</p>
             <p class="text-sm text-gray-500">{{ flight.travel_class || flight.travelClass || 'ECONOMY' }} Class</p>
           </div>
         </div>
@@ -98,12 +98,12 @@
       <div v-if="flights.length > 1" class="bg-teal-50 rounded-xl p-4 border border-teal-200">
         <div class="flex justify-between items-center">
           <div>
-            <p class="text-lg font-semibold text-teal-800">Total Flights: {{ flights.length }}</p>
-            <p class="text-sm text-teal-600">Flight Type: {{ getFlightTypeLabel(flights[0]?.flight_type) }}</p>
+            <p class="text-lg font-semibold text-secondary2">Total Flights: {{ flights.length }}</p>
+            <p class="text-sm text-secondary2">Flight Type: {{ getFlightTypeLabel(flights[0]?.flight_type) }}</p>
           </div>
           <div class="text-right">
-            <p class="text-xl font-bold text-teal-800">{{ formatPrice(getTotalFlightPrice()) }}</p>
-            <p class="text-sm text-teal-600">Total Price</p>
+            <p class="text-xl font-bold text-secondary2">{{ formatPrice(getTotalFlightPrice()) }}</p>
+            <p class="text-sm text-secondary2">Total Price</p>
           </div>
         </div>
       </div>

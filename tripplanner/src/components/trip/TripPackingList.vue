@@ -16,25 +16,25 @@
             type="text"
             v-model="newPackingItem"
             placeholder="Add new item..."
-            class="border border-gray-300 rounded-lg px-3 py-2 mr-2 focus:outline-none focus:ring-2 focus:ring-teal-500"
+            class="border border-gray-300 rounded-lg px-3 py-2 mr-2 focus:outline-none focus:ring-2 focus:ring-secondary2"
             @keyup.enter="addPackingItem"
           />
           <input
             type="number"
             v-model="newPackingItemQuantity"
             placeholder="Qty"
-            class="border border-gray-300 rounded-lg px-3 py-2 w-20 mr-2 focus:outline-none focus:ring-2 focus:ring-teal-500"
+            class="border border-gray-300 rounded-lg px-3 py-2 w-20 mr-2 focus:outline-none focus:ring-2 focus:ring-secondary2"
           />
           <select
             v-model="newPackingItemCategory"
-            class="border border-gray-300 rounded-lg px-3 py-2 mr-2 focus:outline-none focus:ring-2 focus:ring-teal-500"
+            class="border border-gray-300 rounded-lg px-3 py-2 mr-2 focus:outline-none focus:ring-2 focus:ring-secondary2"
           >
             <option value="">Select Category</option>
             <option v-for="(category, idx) in categorizedPackingList.categories" :key="idx" :value="category.name">
               {{ category.name }}
             </option>
           </select>
-          <button @click="addPackingItem" class="bg-teal-600 text-white px-4 py-2 rounded-lg">
+          <button @click="addPackingItem" class="bg-secondary2 text-white px-4 py-2 rounded-lg">
             Add
           </button>
         </div>
@@ -58,12 +58,12 @@
                   type="checkbox"
                   v-model="item.packed"
                   @change="savePackingList"
-                  class="mr-3 h-5 w-5 text-teal-600 focus:ring-teal-500"
+                  class="mr-3 h-5 w-5 text-secondary2 focus:ring-secondary2"
                 />
                 <div>
                   <span :class="{'line-through text-gray-400': item.packed}" class="font-medium">{{ item.name }}</span>
                   <span class="ml-2 text-gray-500">({{ item.quantity }})</span>
-                  <p v-if="item.note" class="text-xs text-teal-600 mt-1">{{ item.note }}</p>
+                  <p v-if="item.note" class="text-xs text-secondary2 mt-1">{{ item.note }}</p>
                 </div>
               </div>
               <button @click="removePackingItem(categoryIndex, itemIndex)" class="text-red-500 hover:text-red-700">
@@ -87,7 +87,7 @@
               type="checkbox"
               v-model="item.packed"
               @change="savePackingList"
-              class="mr-3 h-5 w-5 text-teal-600 focus:ring-teal-500"
+              class="mr-3 h-5 w-5 text-secondary2 focus:ring-secondary2"
             />
             <span :class="{'line-through text-gray-400': item.packed}">{{ item.name }}</span>
             <span class="ml-2 text-gray-500">({{ item.quantity }})</span>

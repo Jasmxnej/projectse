@@ -7,7 +7,7 @@
     </div>
     <button
       @click="$emit('add-to-plan')"
-      class="bg-blue-500 text-white p-2 rounded-full hover:bg-blue-600 flex-shrink-0"
+      class="bg-secondary2 text-white p-2 rounded-full hover:bg-secondary2 flex-shrink-0"
       title="Add to Plan"
     >
       <i class="fas fa-plus"></i>

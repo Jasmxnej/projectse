@@ -1,72 +1,94 @@
 <template>
   <Navbar />
-  <div>
-    <div class="login-container">
-      <div class="login-card">
+  <div class="relative">
+  <!-- Background Video -->
+<div class="fixed top-0 left-0 w-full h-full z-0 overflow-hidden">
+  <video 
+    src="/travelclip.mp4"
+    autoplay 
+    muted 
+    loop 
+    playsinline
+    class="absolute top-1/2 left-1/2 min-w-full min-h-full w-auto h-auto 
+           transform -translate-x-1/2 -translate-y-1/2 object-cover"
+  ></video>
+
+  <!-- Video Overlay (dark transparent layer) -->
+  <div class="absolute top-0 left-0 w-full h-full bg-black bg-opacity-50 z-10"></div>
+</div>
+
+
+   
+
+    <div class="relative min-h-screen flex items-center justify-center p-5 z-20">
+      <div class="bg-white  backdrop-blur-lg rounded-xl p-10 w-full max-w-md text-center shadow-2xl">
         <!-- Avatar/Profile Circle -->
-        <div class="avatar-circle"></div>
+        <div class="w-20 h-20 bg-gradient-to-br from-pink-500 to-pink-300 rounded-full mx-auto mb-6"></div>
         
         <!-- Login Title -->
-        <h1 class="login-title">Log in</h1>
+        <h1 class="text-2xl font-semibold text-gray-800 mb-8">Log in</h1>
         
         <!-- Login Form -->
-        <form @submit.prevent="handleLogin" class="login-form">
+        <form @submit.prevent="handleLogin" class="flex flex-col gap-4">
           <!-- Email Input -->
-          <div class="input-group">
+          <div class="relative">
             <input
               v-model="username"
               type="text"
               placeholder="Username or Email"
-              class="input-field"
+              class="w-full p-4 border-2 border-gray-200 rounded-lg text-base transition-colors duration-200 focus:outline-none focus:border-blue-500 placeholder-gray-400"
               required
             />
           </div>
           
           <!-- Password Input -->
-          <div class="input-group">
+          <div class="relative">
             <input
               v-model="password"
               type="password"
               placeholder="Password"
-              class="input-field"
+              class="w-full p-4 border-2 border-gray-200 rounded-lg text-base transition-colors duration-200 focus:outline-none focus:border-blue-500 placeholder-gray-400"
               required
             />
           </div>
           
           <!-- Forgot Password Link -->
-          <div class="forgot-password">
-            <a href="#" @click.prevent="handleForgotPassword">Forget password?</a>
+          <div class="text-right mt-2 mb-6">
+            <a href="#" @click.prevent="handleForgotPassword" class="text-gray-500 text-sm hover:text-gray-700 hover:underline">Forget password?</a>
           </div>
           
-        
-          
-          
-          
           <!-- Login Button -->
-          <button type="submit" class="login-btn" :disabled="isLoading">
+          <button 
+            type="submit" 
+            class="w-full p-4 bg-cyan-500 text-white border-none rounded-lg text-base font-semibold cursor-pointer transition-colors duration-200 mb-6 hover:bg-cyan-600 disabled:opacity-60 disabled:cursor-not-allowed"
+            :disabled="isLoading"
+          >
             {{ isLoading ? 'Logging in...' : 'Log in' }}
           </button>
         </form>
         
         <!-- Sign Up Link -->
-        <div class="signup-link">
+        <div class="text-gray-500 text-sm">
           Don't have an account?
-          <a href="#" @click.prevent="handleSignUp">Sign up here</a>
+          <a href="#" @click.prevent="handleSignUp" class="text-blue-500 font-semibold hover:underline ml-1">Sign up here</a>
         </div>
-
       </div>
     </div>
-    <div v-if="showSuccessPopup" class="popup-container">
-      <div class="popup-backdrop"></div>
-      <div class="success-popup">
+
+    <!-- Success Popup -->
+    <div v-if="showSuccessPopup" class="fixed top-0 left-0 w-full h-full flex items-center justify-center z-50">
+      <div class="absolute top-0 left-0 w-full h-full bg-black bg-opacity-50"></div>
+      <div class="bg-green-500 text-white p-5 rounded-lg z-50 text-center">
         <p>Login successful! Redirecting...</p>
       </div>
     </div>
-    <div v-if="showErrorPopup" class="popup-container">
-      <div class="popup-backdrop" @click="showErrorPopup = false"></div>
-      <div class="error-popup">
+
+    <!-- Error Popup -->
+    <div v-if="showErrorPopup" class="fixed top-0 left-0 w-full h-full flex items-center justify-center z-50">
+      <div class="absolute top-0 left-0 w-full h-full bg-black bg-opacity-50" @click="showErrorPopup = false"></div>
+      <div class="bg-red-500 text-white p-5 rounded-lg z-50 text-center">
         <p>{{ errorMessage }}</p>
-        <button @click="showErrorPopup = false">Close</button>
+        <button @click="showErrorPopup = false" class="mt-2 px-2 py-1 border-none bg-white text-red-500 rounded cursor-pointer">Close</button>
       </div>
     </div>
   </div>
@@ -78,6 +100,8 @@ import api from '@/api'
 import { useAuthStore } from '@/stores/auth'
 import { useRouter, useRoute } from 'vue-router'
 import Navbar from '../components/Nav.vue';
+
+
 // Reactive variables
 const username = ref<string>('')
 const password = ref<string>('')
@@ -140,238 +164,32 @@ const handleForgotPassword = (): void => {
   alert('Forgot password functionality would be implemented here')
 }
 
-
 const handleSignUp = (): void => {
   router.push('/signup');
 }
 </script>
 
 <style scoped>
-.popup-container {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 999;
-}
-
-.popup-backdrop {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, 0.5);
-}
-
-.success-popup {
-  background-color: #4caf50;
-  color: white;
-  padding: 20px;
-  border-radius: 8px;
-  z-index: 1000;
-  text-align: center;
-}
-
-.error-popup {
-  background-color: #f44336;
-  color: white;
-  padding: 20px;
-  border-radius: 8px;
-  z-index: 1000;
-  text-align: center;
-}
-
-.error-popup button {
-  margin-top: 10px;
-  padding: 5px 10px;
-  border: none;
-  background-color: white;
-  color: #f44336;
-  border-radius: 4px;
-  cursor: pointer;
-}
-.login-container {
-  min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background-color: white;
-  padding: 20px;
-}
-
-.login-card {
-  background: white;
-  border-radius: 12px;
-  padding: 40px;
-  width: 100%;
-  max-width: 400px;
-  text-align: center;
-}
-
-.avatar-circle {
-  width: 80px;
-  height: 80px;
-  background: linear-gradient(135deg, #e91e63, #f48fb1);
-  border-radius: 50%;
-  margin: 0 auto 24px;
-}
-
-.login-title {
-  font-size: 24px;
-  font-weight: 600;
-  color: #333;
-  margin-bottom: 32px;
-}
-
-.login-form {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.input-group {
-  position: relative;
-}
-
-.input-field {
-  width: 100%;
-  padding: 16px;
-  border: 2px solid #e5e7eb;
-  border-radius: 8px;
-  font-size: 16px;
-  transition: border-color 0.2s ease;
-  box-sizing: border-box;
-}
-
-.input-field:focus {
-  outline: none;
-  border-color: #3b82f6;
-}
-
-.input-field::placeholder {
-  color: #9ca3af;
-}
-
-.forgot-password {
-  text-align: right;
-  margin-top: 8px;
-  margin-bottom: 24px;
-}
-
-.forgot-password a {
-  color: #6b7280;
-  text-decoration: none;
-  font-size: 14px;
-}
-
-.forgot-password a:hover {
-  color: #374151;
-  text-decoration: underline;
-}
-
-.divider {
-  position: relative;
-  margin: 24px 0;
-  text-align: center;
-}
-
-.divider::before {
-  content: '';
-  position: absolute;
-  top: 50%;
-  left: 0;
-  right: 0;
-  height: 1px;
-  background: #e5e7eb;
-}
-
-.divider span {
-  background: white;
-  color: #9ca3af;
-  padding: 0 16px;
-  font-size: 14px;
-}
-
-.social-buttons {
-  display: flex;
-  justify-content: center;
-  gap: 16px;
-  margin-bottom: 24px;
-}
-
-.social-btn {
-  width: 48px;
-  height: 48px;
-  border: 2px solid #e5e7eb;
-  border-radius: 50%;
-  background: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.social-btn:hover {
-  border-color: #d1d5db;
-  transform: translateY(-1px);
-}
-
-.login-btn {
-  width: 100%;
-  padding: 16px;
-  background: #06b6d4;
-  color: white;
-  border: none;
-  border-radius: 8px;
-  font-size: 16px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background-color 0.2s ease;
-  margin-bottom: 24px;
-}
-
-.login-btn:hover:not(:disabled) {
-  background: #0891b2;
-}
-
-.login-btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.signup-link {
-  color: #6b7280;
-  font-size: 14px;
-}
-
-.signup-link a {
-  color: #3b82f6;
-  text-decoration: none;
-  font-weight: 600;
-}
-
-.signup-link a:hover {
-  text-decoration: underline;
-}
-
+/* Responsive adjustments for mobile */
 @media (max-width: 480px) {
-  .login-card {
-    padding: 24px;
+  .backdrop-blur-lg {
+    backdrop-filter: blur(8px);
   }
   
-  .avatar-circle {
-    width: 60px;
-    height: 60px;
+  .p-10 {
+    padding: 1.5rem;
   }
   
-  .login-title {
-    font-size: 20px;
+  .w-20 {
+    width: 3.75rem;
+  }
+  
+  .h-20 {
+    height: 3.75rem;
+  }
+  
+  .text-2xl {
+    font-size: 1.25rem;
   }
 }
 </style>

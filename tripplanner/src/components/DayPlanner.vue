@@ -29,7 +29,7 @@
         class="transition-all"
         :class="{
           'opacity-50': dragging && draggedActivity && draggedActivity.dayId === day.id && draggedActivity.index === index,
-          'ring-2 ring-teal-400 bg-teal-50': dragging && draggedActivity && draggedActivity.index !== index
+          'ring-2 ring-secondary2 bg-teal-50': dragging && draggedActivity && draggedActivity.index !== index
         }"
         draggable="true"
         @dragstart="$emit('drag-start', { event: $event, dayId: day.id, index: index })"
@@ -55,7 +55,7 @@
 
     <button
       @click="$emit('add-activity', day.id)"
-      class="w-full mt-4 py-2 border-2 border-dashed border-gray-300 rounded-lg text-gray-500 hover:border-teal-500 hover:text-teal-500 transition-colors"
+      class="w-full mt-4 py-2 border-2 border-dashed border-gray-300 rounded-lg text-gray-500 hover:border-secondary2 hover:text-white transition-colors"
     >
       + Add New Activity
     </button>

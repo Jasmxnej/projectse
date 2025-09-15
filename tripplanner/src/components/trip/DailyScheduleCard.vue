@@ -5,14 +5,14 @@
       <button
         v-if="editable"
         @click="$emit('edit')"
-        class="px-3 py-1 bg-teal-600 text-white rounded-lg transition-colors text-sm edit-button"
+        class="px-3 py-1 bg-secondary2 text-white rounded-lg transition-colors text-sm edit-button"
       >
         Edit Schedule
       </button>
     </div>
     <div v-if="schedule && schedule.length > 0" class="space-y-6">
       <div v-for="day in schedule" :key="day.id" class="bg-gray-50 rounded-xl shadow p-4">
-        <h3 class="text-xl font-bold text-teal-700 mb-4">Day {{ day.day }}</h3>
+        <h3 class="text-xl font-bold text-secondary2 mb-4">Day {{ day.day }}</h3>
         
         <div v-if="day.activities && day.activities.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           <div
@@ -29,7 +29,7 @@
             <div class="p-4">
               <div class="flex justify-between items-start">
                 <h4 class="font-bold text-lg text-gray-800">{{ activity.name }}</h4>
-                <span class="text-sm font-medium bg-teal-100 text-teal-800 px-2 py-1 rounded">{{ activity.time }}</span>
+                <span class="text-sm font-medium bg-secondary1 text-secondary2 px-2 py-1 rounded">{{ activity.time }}</span>
               </div>
               <p v-if="activity.location" class="text-sm text-gray-600 mt-1">
                 <span class="inline-block mr-1">📍</span>{{ activity.location }}
@@ -38,11 +38,11 @@
                 {{ truncateDescription(activity.description) }}
               </p>
               <div class="flex justify-between items-center">
-                <p v-if="activity.cost" class="font-semibold text-teal-600">{{ formatPrice(activity.cost) }}</p>
+                <p v-if="activity.cost" class="font-semibold text-secondary2">{{ formatPrice(activity.cost) }}</p>
                 <div class="flex gap-2">
                   <button
                     @click.stop="showActivityDetails(activity)"
-                    class="px-3 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+                    class="px-3 py-1 text-xs bg-secondary1 text-white rounded hover:bg-secondary2 transition-colors"
                     title="View more details"
                   >
                     More Details
@@ -50,7 +50,7 @@
                   <button
                     v-if="editable"
                     @click.stop="$emit('edit')"
-                    class="px-3 py-1 text-xs bg-teal-600 text-white rounded hover:bg-teal-700 transition-colors"
+                    class="px-3 py-1 text-xs bg-secondary1 text-white rounded hover:bg-secondary2 transition-colors"
                     title="Edit activity"
                   >
                     Edit

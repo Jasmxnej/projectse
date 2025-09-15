@@ -4,7 +4,7 @@
     <div class="w-full max-w-3xl bg-white rounded-2xl shadow-xl p-10 space-y-10 transition-all duration-500 hover:shadow-2xl hover:scale-[1.01] animate-fade-in">
       <!-- Header -->
       <div class="space-y-1">
-        <h2 class="text-4xl font-extrabold text-teal-600 flex items-center gap-3">
+        <h2 class="text-4xl font-extrabold text-secondary2 flex items-center gap-3">
           <MapPin class="w-7 h-7 text-black/70" /> Trip Details
         </h2>
         <p class="text-base text-gray-500 pl-1">Where would you like to go and when?</p>
@@ -51,7 +51,7 @@
                   type="number"
                   v-model.number="formData.groupSize"
                   min="1"
-                  class="w-full h-[44px] pl-10 pr-3 text-sm bg-white border border-gray-300 rounded-xl focus:outline-none focus:ring-1 focus:ring-teal-500 shadow-sm"
+                  class="w-full h-[44px] pl-10 pr-3 text-sm bg-white border border-gray-300 rounded-xl focus:outline-none focus:ring-1 focus:ring-secondary2 shadow-sm"
                   placeholder="1"
                 />
               </div>
@@ -65,7 +65,7 @@
                   type="text"
                   v-model="formattedBudget"
                   @input="onBudgetInput"
-                  class="w-full h-[44px] pl-8 pr-3 text-sm bg-white border border-gray-300 rounded-xl focus:outline-none focus:ring-1 focus:ring-teal-500 shadow-sm"
+                  class="w-full h-[44px] pl-8 pr-3 text-sm bg-white border border-gray-300 rounded-xl focus:outline-none focus:ring-1 focus:ring-secondary2 shadow-sm"
                   placeholder="10,000"
                 />
               </div>
@@ -84,8 +84,8 @@
                 :class="[
                   'flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium border shadow-sm transition-all duration-300 transform hover:scale-[1.02]',
                   formData.activities.includes(tag.label)
-                    ? 'bg-[#14b8a6] text-white'
-                    : 'bg-white text-teal-500 border-[#14b8a6]'
+                    ? 'bg-secondary2 text-white'
+                    : 'bg-white text-secondary2 border-secondary2'
                 ]"
               >
                 <component :is="tag.icon" class="w-4 h-4" /> {{ tag.label }}
@@ -93,7 +93,7 @@
             </div>
             <input
               v-model="formData.otherActivity"
-              class="mt-4 w-full px-4 py-2 text-sm bg-white border border-gray-300 rounded-xl focus:outline-none focus:ring-1 focus:ring-teal-500 shadow-sm"
+              class="mt-4 w-full px-4 py-2 text-sm bg-white border border-gray-300 rounded-xl focus:outline-none focus:ring-1 focus:ring-secondary2 shadow-sm"
               placeholder="Music, Nature, Art..."
             />
           </div>
@@ -104,7 +104,7 @@
             <textarea
               v-model="formData.specialNeeds"
               rows="3"
-              class="w-full px-4 py-3 text-sm bg-white border border-gray-300 rounded-xl focus:outline-none focus:ring-1 focus:ring-teal-500 shadow-sm"
+              class="w-full px-4 py-3 text-sm bg-white border border-gray-300 rounded-xl focus:outline-none focus:ring-1 focus:ring-secondary2 shadow-sm"
               placeholder="e.g., Allergies, mobility support, dietary requests..."
             ></textarea>
           </div>

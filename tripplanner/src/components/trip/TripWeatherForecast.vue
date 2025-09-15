@@ -4,7 +4,7 @@
     <div class="bg-gray-50 rounded-xl p-6 border border-gray-200">
       <div v-if="weatherData.length > 0">
         <!-- Weather summary section -->
-        <div class="mb-6 bg-gradient-to-r from-blue-50 to-teal-50 rounded-lg p-4 shadow-sm border border-blue-100">
+        <div class="mb-6 bg-gradient-to-r from-blue-50 to-secondary1 rounded-lg p-4 shadow-sm border border-blue-100">
           <h3 class="text-lg font-semibold text-gray-800 mb-2">Weather Summary for {{ destination }}</h3>
           <p class="text-gray-700">
             {{ getWeatherSummary() }}
@@ -18,7 +18,7 @@
             :key="index"
             class="bg-white rounded-lg shadow-md p-4 text-center transition-shadow"
           >
-            <p class="font-semibold text-blue-800">{{ formatWeatherDate(day.date) }}</p>
+            <p class="font-semibold text-secondary2">{{ formatWeatherDate(day.date) }}</p>
             <div class="my-3 flex justify-center">
               <img
                 :src="`https://openweathermap.org/img/wn/${day.icon}@2x.png`"
@@ -30,7 +30,7 @@
             <p class="text-gray-700 capitalize font-medium" :class="{'text-orange-600': day.isPlaceholder}">{{ day.description }}</p>
             <div class="mt-3 grid grid-cols-2 gap-2 text-sm">
               <div class="bg-blue-50 p-2 rounded">
-                <p class="text-blue-800">Humidity</p>
+                <p class="text-secondary2">Humidity</p>
                 <p class="font-medium">{{ day.humidity }}%</p>
               </div>
               <div class="bg-teal-50 p-2 rounded">
@@ -48,7 +48,7 @@
           <div class="w-12 h-12 bg-gray-200 rounded-full"></div>
           <div class="w-12 h-12 bg-gray-200 rounded-full"></div>
         </div>
-        <button @click="fetchWeatherForecast" class="mt-6 px-4 py-2 bg-teal-600 text-white rounded-lg transition-colors shadow-md">
+        <button @click="fetchWeatherForecast" class="mt-6 px-4 py-2 bg-secondary2 text-white rounded-lg transition-colors shadow-md">
           Refresh Weather
         </button>
       </div>

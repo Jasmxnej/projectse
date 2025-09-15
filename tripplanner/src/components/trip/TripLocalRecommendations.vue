@@ -3,7 +3,7 @@
     <h2 class="text-2xl font-bold text-gray-800 mb-4">Local Recommendations</h2>
     <div class="bg-gray-50 rounded-xl p-6 border border-gray-200">
       <div v-if="isLoading" class="text-center py-8">
-        <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-teal-500 mx-auto mb-4"></div>
+        <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-secondary2 mx-auto mb-4"></div>
         <p class="text-gray-500">Generating local recommendations...</p>
       </div>
       
@@ -19,10 +19,10 @@
           
           <!-- Numbered list format -->
           <div class="space-y-4">
-            <div v-for="(item, itemIndex) in category.items" :key="itemIndex" class="bg-white rounded-lg shadow-md p-4 border-l-4 border-teal-500">
+            <div v-for="(item, itemIndex) in category.items" :key="itemIndex" class="bg-white rounded-lg shadow-md p-4 border-l-4 border-secondary2">
               <div class="flex items-start space-x-4">
                 <div class="flex-shrink-0">
-                  <div class="w-8 h-8 bg-teal-600 text-white rounded-full flex items-center justify-center font-bold text-sm">
+                  <div class="w-8 h-8 bg-secondary2 text-white rounded-full flex items-center justify-center font-bold text-sm">
                     {{ itemIndex + 1 }}
                   </div>
                 </div>
@@ -67,7 +67,7 @@
                    class="w-full h-48 object-cover"
                    @error="(e) => handleRecommendationImageError(e, rec, rec.category || '')"
                    @load="rec.imageLoaded = true" />
-              <span class="absolute top-2 right-2 px-2 py-1 bg-teal-600 text-white text-xs font-bold rounded">{{ rec.category }}</span>
+              <span class="absolute top-2 right-2 px-2 py-1 bg-secondary2 text-white text-xs font-bold rounded">{{ rec.category }}</span>
             </div>
             <div class="p-4 flex-grow">
               <h3 class="text-xl font-bold text-gray-800 mb-2">{{ rec.name }}</h3>
@@ -84,7 +84,7 @@
       
       <div v-else class="text-center py-8">
         <p class="text-gray-500">No recommendations found. Please try again.</p>
-        <button @click="fetchLocalRecommendations" class="mt-4 px-4 py-2 bg-teal-600 text-white rounded-lg">
+        <button @click="fetchLocalRecommendations" class="mt-4 px-4 py-2 bg-secondary2 text-white rounded-lg">
           Refresh Recommendations
         </button>
       </div>

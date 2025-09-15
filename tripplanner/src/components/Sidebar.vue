@@ -6,7 +6,7 @@
       
       <!-- Active progress line -->
       <div 
-        class="absolute top-3 left-0 h-0.5 bg-teal z-0 transition-all duration-500 ease-in-out"
+        class="absolute top-3 left-0 h-0.5 bg-secondary2 z-0 transition-all duration-500 ease-in-out"
         :style="{ width: progressWidth + '%' }"
       ></div>
 
@@ -85,7 +85,7 @@ const stepWrapperClass = `
   hover:scale-105 bg-transparent pt-8
 `;
 
-const activeWrapper = 'text-teal font-semibold';
+const activeWrapper = 'text-secondary2 font-semibold';
 
 const stepLabelBaseClass = `
   text-sm font-medium transition-colors duration-300
@@ -98,9 +98,9 @@ const circleClass = `
 // Get circle state classes
 const getCircleState = (stepNumber: number): string => {
   if (currentStep.value === stepNumber) {
-    return 'bg-teal border-white';
+    return 'bg-secondary2 border-secondary2';
   } else if (currentStep.value > stepNumber) {
-    return 'bg-teal border-white';
+    return 'bg-secondary2 border-secondary2';
   } else {
     return 'bg-white border-gray-300';
   }
@@ -109,7 +109,7 @@ const getCircleState = (stepNumber: number): string => {
 // Get step label classes based on current step
 const getStepLabelClass = (stepNumber: number): string => {
   if (currentStep.value === stepNumber) {
-    return 'text-teal font-semibold';
+    return 'text-secondary2 font-semibold';
   } else if (currentStep.value > stepNumber) {
     return 'text-gray-600';
   } else {
