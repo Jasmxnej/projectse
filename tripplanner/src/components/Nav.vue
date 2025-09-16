@@ -47,15 +47,26 @@
         CONTACT US
       </RouterLink>
       <RouterLink
+        to="/community"
+        class="nav-link text-sm font-medium tracking-wide uppercase transition-colors duration-200"
+        :class="{
+          'text-secondary2 border-b-2 border-secondary2 pb-1': isActive('/community'),
+          'hover:text-secondary1': !isActive('/community')
+        }"
+      >
+        COMMUNITY
+      </RouterLink>
+      <RouterLink
         to="/mytrips"
         class="nav-link text-sm font-medium tracking-wide uppercase transition-colors duration-200"
-        :class="{ 
+        :class="{
           'text-secondary2 border-b-2 border-secondary2 pb-1': isActive('/mytrips'),
           'hover:text-secondary1': !isActive('/mytrips')
         }"
       >
         MY TRIP
       </RouterLink>
+      
     </div>
 
     <!-- Right User Section -->

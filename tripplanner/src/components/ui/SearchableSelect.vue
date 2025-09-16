@@ -6,7 +6,7 @@
       tabindex="0"
       @keydown.enter="toggleDropdown"
     >
-      <span class="text-sm text-gray-700">{{ modelValue || placeholder }}</span>
+      <span class="text-sm" :class="{ 'text-gray-400': !modelValue, 'text-gray-800': modelValue }">{{ modelValue || placeholder }}</span>
       <ChevronDownIcon class="w-4 h-4 text-gray-400" :class="{ 'rotate-180': isOpen }" />
     </div>
     

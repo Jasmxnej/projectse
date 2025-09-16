@@ -33,10 +33,10 @@
     <div class="flex flex-col items-end justify-between w-full md:w-40 mt-4 md:mt-0 text-right">
       <div>
         <div class="text-teal-600 text-xl font-bold">
-          {{ formatPrice(selectedHotel?.price) }}
+          {{ formatPrice(getPerNightPrice(selectedHotel)) }}
         </div>
         <p class="text-sm text-gray-500">per night</p>
-        <p class="text-sm text-black font-medium mt-1">Total: {{ totalPrice }}</p>
+        <p class="text-sm text-black font-medium mt-1">Total: {{ formatPrice(selectedHotel?.price) }}</p>
       </div>
       <div class="flex flex-col items-end gap-2 mt-3">
         <button
@@ -86,15 +86,21 @@ const formatPrice = (price: number | undefined) => {
   }).format(price);
 };
 
-const stayDuration = computed(() => {
-  const checkIn = new Date(props.selectedHotel?.checkInDate || '');
-  const checkOut = new Date(props.selectedHotel?.checkOutDate || '');
-  const diff = (checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24);
-  return diff > 0 ? diff : 1;
-});
+const getPerNightPrice = (hotel?: Hotel) => {
+  if (!hotel?.checkInDate || !hotel?.checkOutDate || !hotel.price) return hotel?.price || 0;
+  const checkIn = new Date(hotel.checkInDate);
+  const checkOut = new Date(hotel.checkOutDate);
+  const diffTime = Math.abs(checkOut.getTime() - checkIn.getTime());
+  const nights = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  if (nights <= 0) return hotel.price;
+  return hotel.price / nights;
+};
 
-const totalPrice = computed(() => {
-  const price = props.selectedHotel?.price || 0;
-  return formatPrice(price * stayDuration.value);
+const stayDuration = computed(() => {
+  if (!props.selectedHotel?.checkInDate || !props.selectedHotel?.checkOutDate) return 1;
+  const checkIn = new Date(props.selectedHotel.checkInDate);
+  const checkOut = new Date(props.selectedHotel.checkOutDate);
+  const diffTime = Math.abs(checkOut.getTime() - checkIn.getTime());
+  return Math.ceil(diffTime / (1000 * 60 * 60 * 24)) || 1;
 });
 </script>

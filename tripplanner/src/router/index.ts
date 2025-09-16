@@ -86,6 +86,16 @@ const router = createRouter({
       name: 'contact',
       component: Contact,
     },
+    {
+      path: '/community',
+      name: 'community',
+      component: () => import('../views/Community.vue'),
+    },
+    {
+      path: '/community/:id',
+      name: 'community-trip-detail',
+      component: () => import('../views/CommunityTripDetail.vue'),
+    },
   ],
 })
 

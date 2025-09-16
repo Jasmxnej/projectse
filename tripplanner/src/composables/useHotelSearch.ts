@@ -16,24 +16,26 @@ export function useHotelSearch() {
   const selectedHotelDetails = ref<Hotel | null>(null);
   const isLoading = ref(false);
   const currentPage = ref(1);
-  const hotelsPerPage = 20; // Increased to show more than 7 hotels per page
+  const hotelsPerPage = 20;
   const totalPages = ref(1);
+  const isLoadingMore = ref(false);
+  const hasMore = computed(() => searchParams.value !== null && currentPage.value < totalPages.value);
   const { generatedContent, generateContent } = useGemini();
 
   const fetchImagesFromUnsplash = async (placeName: string) => {
     try {
-      const response = await axios.get(`http://localhost:3002/api/unsplash/image?place=${encodeURIComponent(placeName)}`);
+      const response = await axios.get(`http://localhost:3002/api/unsplash/image?place=${encodeURIComponent(placeName)}&type=hotel`);
       const baseImage = response.data?.image;
       if (baseImage) {
         return baseImage;
       } else {
         const keyword = placeName?.split(' ')[0] || 'hotel';
-        return `https://source.unsplash.com/640x360/?${keyword},resort`;
+        return `https://source.unsplash.com/featured/640x360/?${keyword},hotel`;
       }
     } catch (error) {
       console.error(`Failed to fetch images for ${placeName}:`, error);
       const keyword = placeName?.split(' ')[0] || 'hotel';
-      return `https://source.unsplash.com/640x360/?${keyword},resort`;
+      return `https://source.unsplash.com/featured/640x360/?${keyword},hotel`;
     }
   };
 
@@ -67,10 +69,12 @@ export function useHotelSearch() {
   };
 
   const fetchHotelOptions = async (params: any, newSearch = true) => {
-    isLoading.value = true;
     if (newSearch) {
+      isLoading.value = true;
       currentPage.value = 1;
-      hotels.value = Array(hotelsPerPage).fill({});
+      hotels.value = [];
+    } else {
+      isLoadingMore.value = true;
     }
 
     let payload = {
@@ -96,16 +100,15 @@ export function useHotelSearch() {
         const hotel = entry.hotel;
         const offer = entry.offers?.[0];
 
-        // Improve image matching by using more specific hotel name keywords
-        let imageKeyword = hotel.name || '';
-        // Extract the hotel brand/chain name if possible
-        const hotelNameParts = imageKeyword.split(' ');
-        if (hotelNameParts.length > 1) {
-          // Use first two words of hotel name for better matching
-          imageKeyword = hotelNameParts.slice(0, 2).join(' ');
+        let image: string;
+        // Use Amadeus image if available
+        if (hotel.image) {
+          image = hotel.image;
+        } else {
+          // Improve image matching by using more specific hotel name + city keywords
+          let imageKeyword = `${hotel.name || 'hotel'},${hotel.cityCode || 'city'}`;
+          image = await fetchImagesFromUnsplash(imageKeyword);
         }
-
-        const image = await fetchImagesFromUnsplash(imageKeyword || hotel.cityCode || 'hotel');
 
         return {
           id: hotel.hotelId,
@@ -146,26 +149,40 @@ export function useHotelSearch() {
         processedHotels = processedHotels.filter(hotel => hotel.rating && hotel.rating >= parseInt(params.minRating));
       }
 
-      hotels.value = processedHotels;
+      if (newSearch) {
+        hotels.value = processedHotels;
+      } else {
+        hotels.value.push(...processedHotels);
+      }
 
     } catch (error) {
       console.error('Error fetching hotels:', error);
-      
-      // Show alert about using mock data
-      alert('There was an error connecting to the Amadeus API. Using mock data instead.');
-      
-      try {
-        // First try Gemini
-        const prompt = `Generate hotel options for a trip. Search parameters: ${JSON.stringify(payload)}. Format response like Amadeus with "data" and "totalPages".`;
-        await generateContent(prompt, import.meta.env.VITE_GEMINI_API_KEY);
-        const geminiData = generatedContent.value;
-        if (geminiData && Array.isArray(geminiData.data)) {
-          totalPages.value = geminiData.totalPages || 1;
-          hotels.value = geminiData.data;
-        } else {
-          // If Gemini fails, use our static mock data
-          console.error("Invalid Gemini response, using static mock data:", geminiData);
-          const mockResponse = getMockData('hotels', { cityCode: params.cityCode }) as {
+      if (newSearch) {
+        // Show alert about using mock data
+        alert('There was an error connecting to the Amadeus API. Using mock data instead.');
+        
+        try {
+          // First try Gemini
+          const prompt = `Generate hotel options for a trip. Search parameters: ${JSON.stringify(payload)}. Format response like Amadeus with "data" and "totalPages".`;
+          await generateContent(prompt, import.meta.env.VITE_GEMINI_API_KEY);
+          const geminiData = generatedContent.value;
+          if (geminiData && Array.isArray(geminiData.data)) {
+            totalPages.value = geminiData.totalPages || 1;
+            hotels.value = geminiData.data;
+          } else {
+            // If Gemini fails, use our static mock data
+            console.error("Invalid Gemini response, using static mock data:", geminiData);
+            const mockResponse = getMockData('hotels') as {
+              data: Hotel[],
+              totalPages: number,
+              isMock: boolean
+            };
+            hotels.value = mockResponse.data;
+            totalPages.value = mockResponse.totalPages || 1;
+          }
+        } catch (geminiE) {
+          console.error('Error with Gemini fallback, using static mock data:', geminiE);
+          const mockResponse = getMockData('hotels') as {
             data: Hotel[],
             totalPages: number,
             isMock: boolean
@@ -173,18 +190,15 @@ export function useHotelSearch() {
           hotels.value = mockResponse.data;
           totalPages.value = mockResponse.totalPages || 1;
         }
-      } catch (geminiE) {
-        console.error('Error with Gemini fallback, using static mock data:', geminiE);
-        const mockResponse = getMockData('hotels', { cityCode: params.cityCode }) as {
-          data: Hotel[],
-          totalPages: number,
-          isMock: boolean
-        };
-        hotels.value = mockResponse.data;
-        totalPages.value = mockResponse.totalPages || 1;
+      } else {
+        console.error('Failed to load more hotels due to API error.');
       }
     } finally {
-      isLoading.value = false;
+      if (newSearch) {
+        isLoading.value = false;
+      } else {
+        isLoadingMore.value = false;
+      }
     }
   };
 
@@ -308,8 +322,10 @@ export function useHotelSearch() {
     selectedHotel,
     selectedHotelDetails,
     isLoading,
+    isLoadingMore,
     currentPage,
     totalPages,
+    hasMore,
     nextPage,
     prevPage,
     plannedExpenses,

@@ -109,50 +109,71 @@ const formatAmenity = (text: string) => {
 // Fetch Unsplash images
 onMounted(async () => {
   document.body.style.overflow = 'hidden'; // prevent scroll
-  const name = props.hotel?.name || 'hotel';
+  const hotel = props.hotel;
+  const name = hotel?.name || 'hotel';
+  const cityCode = hotel?.cityCode || '';
+  const cityName = cityCode ? `,${cityCode.toLowerCase()}` : '';
+  const images: string[] = [];
+
   try {
-    // Fetch three different images for the hotel
-    const keywords = [
-      `${name} hotel exterior`,
-      `${name} hotel room`,
-      `${name} hotel amenities`
-    ];
-    
-    // Add a random parameter to ensure different images
-    const imagePromises = keywords.map((keyword, index) =>
-      axios.get(`http://localhost:3002/api/unsplash/image?place=${encodeURIComponent(keyword)}&random=${Date.now() + index}`)
-    );
-    
-    const results = await Promise.allSettled(imagePromises);
-    const images: string[] = [];
-    
-    // Process each result and ensure we have unique images
-    for (let i = 0; i < results.length; i++) {
-      const result = results[i];
-      if (result.status === 'fulfilled' && result.value.data?.image) {
-        const image = result.value.data.image;
-        // Only add if not already in the array
-        if (!images.includes(image)) {
-          images.push(image);
-        } else {
-          // If duplicate, use a different fallback
-          const fallbackKeyword = `${keywords[i].split(' ')[0]}-${i}` || `hotel-${i}`;
-          images.push(`https://source.unsplash.com/640x360/?${fallbackKeyword},resort&random=${Date.now() + i}`);
-        }
+    // If Amadeus image available, use as first
+    if (hotel?.image) {
+      images.push(hotel.image);
+    } else {
+      // Fetch primary Unsplash with hotel name + city
+      const primaryKeyword = `${name} hotel${cityName}`;
+      const primaryResponse = await axios.get(`http://localhost:3002/api/unsplash/image?place=${encodeURIComponent(primaryKeyword)}&type=hotel`);
+      if (primaryResponse.data?.image) {
+        images.push(primaryResponse.data.image);
       } else {
-        // Fallback to direct Unsplash with different queries and random parameter
-        const fallbackKeyword = `${keywords[i].split(' ')[0]}-${i}` || `hotel-${i}`;
-        images.push(`https://source.unsplash.com/640x360/?${fallbackKeyword},resort&random=${Date.now() + i}`);
+        images.push(`https://source.unsplash.com/featured/640x360/?${primaryKeyword.replace(/\s/g, ',')},hotel`);
       }
     }
-    
-    imageGallery.value = images;
+
+    // Fetch two more images: room and amenities, with city
+    const additionalKeywords = [
+      `${name} hotel room${cityName}`,
+      `${name} hotel amenities${cityName}`
+    ];
+
+    const additionalPromises = additionalKeywords.map((keyword, index) =>
+      axios.get(`http://localhost:3002/api/unsplash/image?place=${encodeURIComponent(keyword)}&type=hotel&random=${Date.now() + index}`)
+    );
+
+    const additionalResults = await Promise.allSettled(additionalPromises);
+    additionalResults.forEach((result, i) => {
+      if (result.status === 'fulfilled' && result.value.data?.image) {
+        const img = result.value.data.image;
+        if (!images.includes(img)) {
+          images.push(img);
+        }
+      } else {
+        const fallbackKeyword = additionalKeywords[i].split(' ')[0] || 'hotel';
+        const fallback = `https://source.unsplash.com/featured/640x360/?${fallbackKeyword},hotel&random=${Date.now() + i}`;
+        if (!images.includes(fallback)) {
+          images.push(fallback);
+        }
+      }
+    });
+
+    // Ensure at least 3 images
+    while (images.length < 3) {
+      const genericKeywords = ['hotel-room', 'hotel-lobby', 'hotel-pool'];
+      const generic = `https://source.unsplash.com/featured/640x360/?${genericKeywords[images.length - 1]}`;
+      if (!images.includes(generic)) {
+        images.push(generic);
+      }
+    }
+
+    imageGallery.value = images.slice(0, 3);
   } catch (err) {
     console.error('Images fetch failed:', err);
-    // Use direct Unsplash source API as fallback with different queries
-    const keywords = ['hotel-exterior', 'hotel-room', 'hotel-amenities'];
-    imageGallery.value = keywords.map(keyword =>
-      `https://source.unsplash.com/640x360/?${keyword}`
+    // Fallback to 3 generic Unsplash with city if available
+    const fallbackKeywords = cityCode ?
+      [`hotel ${cityCode}`, `hotel room ${cityCode}`, `hotel amenities ${cityCode}`] :
+      ['hotel', 'hotel-room', 'hotel-amenities'];
+    imageGallery.value = fallbackKeywords.map(keyword =>
+      `https://source.unsplash.com/featured/640x360/?${keyword.replace(/\s/g, ',')}`
     );
   }
 });

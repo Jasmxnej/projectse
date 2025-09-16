@@ -176,7 +176,7 @@
                     {{ option.label }}
                     <span
                       v-if="hasData(option.value)"
-                      class="absolute -top-1 -right-1 w-2 h-2 bg-green-500 rounded-full"
+                      class="absolute -top-1 -right-1 w-2 h-2 "
                       title="Has data"
                     ></span>
                   </span>
@@ -246,6 +246,15 @@
                 :destination="trip.destination"
                 :use-saved-data="true"
                 @data-updated="updateRecommendationsData"
+              />
+            </div>
+
+            <!-- Transit Tab -->
+            <div v-else-if="selectedView === 'transit'">
+              <TransitSection
+                :schedule="schedule"
+                :destination="trip?.destination"
+                :editable="false"
               />
             </div>
             
@@ -373,6 +382,12 @@
         <h2 class="text-2xl font-bold text-gray-800 mb-4">Local Recommendations</h2>
         <TripLocalRecommendations :destination="trip?.destination" :use-saved-data="true" />
       </div>
+
+      <!-- Transit Section for PDF -->
+      <div class="bg-white rounded-xl shadow-lg p-6" v-if="hasData('transit')">
+        <h2 class="text-2xl font-bold text-gray-800 mb-4">Transit Information</h2>
+        <TransitSection :schedule="schedule" :destination="trip?.destination" :pdf-mode="true" />
+      </div>
       
     
     </div>
@@ -390,6 +405,7 @@ import TripDetailsCard from '@/components/trip/TripDetailsCard.vue';
 import FlightDetailsCard from '@/components/trip/FlightDetailsCard.vue';
 import HotelDetailsCard from '@/components/trip/HotelDetailsCard.vue';
 import DailyScheduleCard from '@/components/trip/DailyScheduleCard.vue';
+import TransitSection from '@/components/trip/TransitSection.vue';
 import TripPdfGenerator from '@/components/trip/TripPdfGenerator.vue';
 import TripWeatherForecast from '@/components/trip/TripWeatherForecast.vue';
 import TripPackingList from '@/components/trip/TripPackingList.vue';
@@ -488,15 +504,17 @@ const hasData = (section: string): boolean => {
     case 'daily':
       return !!schedule.value && schedule.value.length > 0;
     case 'budget':
-      return true; 
+      return true;
     case 'weather':
-      return !!trip.value?.destination; 
+      return !!trip.value?.destination;
     case 'packing':
-      return true; 
+      return true;
     case 'recommendations':
-      return !!trip.value?.destination; 
+      return !!trip.value?.destination;
+    case 'transit':
+      return !!schedule.value && schedule.value.length > 0 && schedule.value.some((day: any) => day.activities && day.activities.some((act: any) => act.location && act.location.trim()));
     case 'adapter':
-      return !!trip.value?.destination; 
+      return !!trip.value?.destination;
     default:
       return false;
   }
@@ -561,6 +579,7 @@ const viewOptions = [
   { label: 'Weather', value: 'weather' },
   { label: 'Packing', value: 'packing' },
   { label: 'Recommendations', value: 'recommendations' },
+  { label: 'Transit', value: 'transit' },
 ];
 
 const fetchTripSummary = async () => {

@@ -2,7 +2,13 @@
   <div class="grid grid-cols-1 gap-6">
     <!-- Loading placeholder -->
     <template v-if="isLoading">
-      <div class="text-center text-gray-500 py-10">Loading hotels...</div>
+      <div class="text-center p-12 animate-pulse">
+        <div class="flex flex-col items-center space-y-4">
+          <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600"></div>
+          <p class="text-lg font-medium text-gray-500">Searching for hotels...</p>
+          <p class="text-sm text-gray-400">Please wait while we find the best options for you</p>
+        </div>
+      </div>
     </template>
 
     <!-- Hotel cards -->
@@ -16,10 +22,10 @@
         <!-- Image with Unsplash fallback -->
         <div class="relative w-full md:w-48 h-36 flex-shrink-0">
           <img
-            :src="hotel.image || getFallbackImage(hotel.name)"
+            :src="hotel.image || getFallbackImage(hotel.name, hotel.cityCode)"
             alt="Hotel Image"
             class="w-full h-full object-cover rounded-xl border"
-            @error="handleImageError($event, hotel.name)"
+            @error="handleImageError($event, hotel.name, hotel.cityCode)"
           />
         </div>
 
@@ -42,11 +48,11 @@
         <div class="flex flex-col items-end justify-between w-full md:w-40 text-right mt-4 md:mt-0">
           <div>
             <div class="text-teal-600 text-xl font-bold">
-              {{ hotel.price ? formatPrice(hotel.price) : 'No rate yet' }}
+              {{ formatPrice(getPerNightPrice(hotel)) }}
             </div>
             <p class="text-xs text-gray-500">per night</p>
             <p class="text-sm text-black font-medium mt-1">
-              Total: {{ formatPrice(getTotalPrice(hotel)) }}
+              Total: {{ formatPrice(hotel.price) }}
             </p>
             <p class="text-xs text-gray-400 mt-1">
               {{ formatDate(hotel.checkInDate) }} → {{ formatDate(hotel.checkOutDate) }}
@@ -69,8 +75,8 @@
         </div>
       </div>
     </template>
-
   
+   
   </div>
 </template>
 
@@ -118,22 +124,42 @@ const formatDate = (dateString: string) => {
   return new Date(dateString).toLocaleDateString(undefined, options);
 };
 
-const getTotalPrice = (hotel: Hotel) => {
+const getPerNightPrice = (hotel: Hotel) => {
   const checkIn = new Date(hotel.checkInDate);
   const checkOut = new Date(hotel.checkOutDate);
-  const diff = (checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24);
-  const nights = diff > 0 ? diff : 1;
-  return hotel.price * nights;
+  const diffTime = Math.abs(checkOut.getTime() - checkIn.getTime());
+  const nights = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  if (nights <= 0) return hotel.price;
+  return hotel.price / nights;
 };
 
-const getFallbackImage = (name: string) => {
-  const keyword = name?.split(' ')[0] || 'hotel';
-  return `https://source.unsplash.com/640x360/?${keyword},resort`;
+const getFallbackImage = (name: string, cityCode: string = '') => {
+  let keyword = name?.split(' ')[0] || 'hotel';
+  // Build more specific query with city if available
+  if (cityCode) {
+    keyword = `${keyword},${cityCode.toLowerCase()}`;
+  }
+  return `https://source.unsplash.com/featured/640x360/?${keyword},hotel`;
 };
 
-const handleImageError = (event: Event, hotelName: string) => {
+const handleImageError = (event: Event, hotelName: string, cityCode: string = '') => {
   const imgElement = event.target as HTMLImageElement;
-  imgElement.src = getFallbackImage(hotelName);
+  if (imgElement) {
+    // First try specific fallback
+    imgElement.src = getFallbackImage(hotelName, cityCode);
+    
+    // Multi-level fallback
+    imgElement.onerror = () => {
+      // Try with city only
+      imgElement.src = `https://source.unsplash.com/featured/640x360/?${cityCode.toLowerCase()},hotel`;
+      
+      // Final fallback
+      imgElement.onerror = () => {
+        imgElement.src = 'https://source.unsplash.com/featured/640x360/?hotel,travel';
+        imgElement.onerror = null; // Prevent infinite loop
+      };
+    };
+  }
 };
 </script>
 
@@ -142,3 +168,4 @@ const handleImageError = (event: Event, hotelName: string) => {
   box-shadow: 0 0 15px rgba(56, 189, 248, 0.5);
 }
 </style>
+

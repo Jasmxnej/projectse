@@ -197,6 +197,19 @@
               ref="localRecommendationsComponent"
             />
           </section>
+          
+          <!-- Transit Section -->
+          <section id="transit-section" class="bg-white rounded-xl shadow-lg p-6 scroll-mt-32">
+            <h2 class="text-2xl font-bold text-gray-800 mb-6 flex items-center">
+              <span class="bg-secondary1 text-secondary2 rounded-full w-8 h-8 flex items-center justify-center text-sm font-bold mr-3">🚇</span>
+              Transit Information
+            </h2>
+            <TransitSection
+              :schedule="schedule"
+              :destination="trip?.destination"
+              :editable="false"
+            />
+          </section>
         </div>
       </div>
     </main>
@@ -217,6 +230,7 @@ import TripLocalRecommendations from '@/components/trip/TripLocalRecommendations
 import TripBudgetAnalysis from '@/components/trip/TripBudgetAnalysis.vue';
 import FlightDetailsCard from '@/components/trip/FlightDetailsCard.vue';
 import HotelDetailsCard from '@/components/trip/HotelDetailsCard.vue';
+import TransitSection from '@/components/trip/TransitSection.vue';
 import TravelPlugInfo from '@/components/trip/TravelPlugInfo.vue';
 
 const route = useRoute();
@@ -247,6 +261,7 @@ const viewOptions = [
   { label: 'Weather', value: 'weather' },
   { label: 'Packing', value: 'packing' },
   { label: 'Recommendations', value: 'recommendations' },
+  { label: 'Transit', value: 'transit' },
 ];
 
 // Smooth scroll to section function
@@ -276,7 +291,7 @@ const scrollToSection = (sectionValue: string) => {
 const observeSections = () => {
   const sections = viewOptions.map(option => document.getElementById(`${option.value}-section`)).filter(Boolean);
   
-  if (sections.length === 0) return;
+  if (sections.length === 0) return null;
 
   const observer = new IntersectionObserver(
     (entries) => {

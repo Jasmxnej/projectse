@@ -38,6 +38,7 @@
     "vite-plugin-vue-devtools": "^7.7.2"
   },
   "dependencies": {
+    "@googlemaps/js-api-loader": "^1.16.10",
     "@types/lodash": "^4.17.20",
     "@vuepic/vue-datepicker": "^11.0.2",
     "axios": "^1.10.0",

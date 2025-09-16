@@ -61,8 +61,8 @@ router.post('/amadeus/hotels', async (req, res) => {
         throw new Error('No hotels found');
       }
 
-      // Limit to top 50 hotels by rank for faster processing
-      allHotelIds = allHotelIds.slice(0, 50);
+      // Increase limit to 100 for more results
+      allHotelIds = allHotelIds.slice(0, 100);
 
       const totalPages = Math.ceil(allHotelIds.length / limit);
       const startIndex = (page - 1) * limit;
@@ -74,38 +74,82 @@ router.post('/amadeus/hotels', async (req, res) => {
       }
 
       const availableHotels = [];
-      // Smaller batch size for faster parallel processing
-      for (let i = 0; i < paginatedHotelIds.length; i += 3) {
-        const batchIds = paginatedHotelIds.slice(i, i + 3);
+      // Larger batch size for efficiency
+      for (let i = 0; i < paginatedHotelIds.length; i += 5) {
+        const batchIds = paginatedHotelIds.slice(i, i + 5);
         if (batchIds.length === 0) continue;
 
         try {
-          // Process each hotel ID individually to avoid invalid property code errors
+          // Batch fetch hotel offers to reduce API calls
+          const hotelOffersResponse = await amadeus.shopping.hotelOffersSearch.get({
+            hotelIds: batchIds.join(','),
+            checkInDate,
+            checkOutDate,
+            adults,
+            // Remove ratings filter to get more results
+            // ratings: '2,3,4,5',
+            // Remove amenities filter to avoid no availability errors
+            // amenities: 'SWIMMING_POOL,SPA,FITNESS_CENTER,RESTAURANT,PARKING,WIFI',
+            bestRateOnly: true,
+            view: 'FULL_ALL_IMAGES',
+            sort: 'PRICE'
+          });
+
+          if (hotelOffersResponse.data) {
+            const offers = hotelOffersResponse.data.filter(offer => offer.available && offer.offers && offer.offers.length > 0);
+            // Extract images from Amadeus response if available
+            offers.forEach(offer => {
+              const hotel = offer.hotel;
+              if (hotel.media && hotel.media.images && hotel.media.images.length > 0) {
+                // Pick the first high-quality image (e.g., EXTERIOR or LOBBY)
+                const primaryImage = hotel.media.images.find(img =>
+                  img.category === 'EXTERIOR' || img.category === 'LOBBY' || img.type === 'PRIMARY'
+                ) || hotel.media.images[0];
+                if (primaryImage && primaryImage.url) {
+                  hotel.image = primaryImage.url;
+                }
+              }
+            });
+            availableHotels.push(...offers);
+          }
+        } catch (batchError) {
+          console.error(`Error processing batch of hotel offers ${batchIds.join(',')}:`, batchError.description || batchError.message);
+          // Fallback: try individual calls for this batch if batch fails
           for (const hotelId of batchIds) {
             try {
-              const hotelOffersResponse = await amadeus.shopping.hotelOffersSearch.get({
+              const singleResponse = await amadeus.shopping.hotelOffersSearch.get({
                 hotelIds: hotelId,
                 checkInDate,
                 checkOutDate,
                 adults,
-                ratings: '2,3,4,5', 
-                amenities: 'SWIMMING_POOL,SPA,FITNESS_CENTER,RESTAURANT,PARKING,WIFI', 
+                // Remove filters same as batch
+                // ratings: '2,3,4,5',
+                // amenities: 'SWIMMING_POOL,SPA,FITNESS_CENTER,RESTAURANT,PARKING,WIFI',
                 bestRateOnly: true,
                 view: 'FULL_ALL_IMAGES',
                 sort: 'PRICE'
               });
 
-              if (hotelOffersResponse.data) {
-                const offers = hotelOffersResponse.data.filter(offer => offer.available && offer.offers && offer.offers.length > 0);
-                availableHotels.push(...offers);
+              if (singleResponse.data) {
+                const singleOffers = singleResponse.data.filter(offer => offer.available && offer.offers && offer.offers.length > 0);
+                // Extract images for single response too
+                singleOffers.forEach(offer => {
+                  const hotel = offer.hotel;
+                  if (hotel.media && hotel.media.images && hotel.media.images.length > 0) {
+                    const primaryImage = hotel.media.images.find(img =>
+                      img.category === 'EXTERIOR' || img.category === 'LOBBY' || img.type === 'PRIMARY'
+                    ) || hotel.media.images[0];
+                    if (primaryImage && primaryImage.url) {
+                      hotel.image = primaryImage.url;
+                    }
+                  }
+                });
+                availableHotels.push(...singleOffers);
               }
-            } catch (singleHotelError) {
-              console.error(`Error fetching hotel offer for ${hotelId}:`, singleHotelError.description || singleHotelError.message);
-              
+            } catch (singleError) {
+              console.error(`Error fetching hotel offer for ${hotelId}:`, singleError.description || singleError.message);
             }
           }
-        } catch (batchError) {
-          console.error(`Error processing batch of hotel offers:`, batchError);
         }
       }
       
