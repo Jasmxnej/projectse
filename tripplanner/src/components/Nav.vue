@@ -50,8 +50,8 @@
         to="/mytrips"
         class="nav-link text-sm font-medium tracking-wide uppercase transition-colors duration-200"
         :class="{ 
-          'text-blue-500 border-b-2 border-blue-500 pb-1': isActive('/mytrips'),
-          'hover:text-blue-500': !isActive('/mytrips')
+          'text-secondary2 border-b-2 border-secondary2 pb-1': isActive('/mytrips'),
+          'hover:text-secondary1': !isActive('/mytrips')
         }"
       >
         MY TRIP

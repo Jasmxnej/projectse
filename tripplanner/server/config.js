@@ -17,6 +17,6 @@ module.exports = {
     apiKey: process.env.GEMINI_API_KEY
   },
   unsplash: {
-    accessKey: process.env.UNSPLASH_ACCESS_KEY || 'fc-ArSt0D1zg7mPII2gpxeWtGMxxdPi_DzcrGuIoVl8'
+    accessKey: process.env.UNSPLASH_ACCESS_KEY || 'SPZK6MBue-yZodCX-fFqm25g6mtFwQOyAzI3R5zMauI'
   }
 };
