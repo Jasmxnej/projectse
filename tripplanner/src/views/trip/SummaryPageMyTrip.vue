@@ -96,10 +96,10 @@
                     <div v-if="flights.length > 1" class="text-xs text-secondary2 font-medium mb-1">
                       Leg {{ flight.leg_number || (index + 1) }} - {{ getFlightTypeLabel(flight.flight_type) }}
                     </div>
-                    <p><span class="font-medium">Route:</span> {{ flight.from_city || flight.fromCity || '?' }} ({{ flight.from_iata || flight.fromIata || '?' }}) → {{ flight.to_city || flight.toCity || '?' }} ({{ flight.to_iata || flight.toIata || '?' }})</p>
+                    <p><span class="font-medium">Route:</span> {{ flight.from_city || flight.fromCity  }} ({{ flight.from_iata || flight.fromIata  }}) → {{ flight.to_city || flight.toCity }} ({{ flight.to_iata || flight.toIata  }})</p>
                     <p><span class="font-medium">Airline:</span> {{ flight.airline || 'Unknown Airline' }}</p>
-                    <p><span class="font-medium">Departure:</span> {{ formatDateTime(flight.departure_time || flight.departureTime) }}</p>
-                    <p><span class="font-medium">Arrival:</span> {{ formatDateTime(flight.arrival_time || flight.arrivalTime) }}</p>
+                    <p><span class="font-medium">Departure:</span> {{ flight.departure_time || flight.departureTime }}</p>
+                    <p><span class="font-medium">Arrival:</span> {{ flight.arrival_time || flight.arrivalTime }}</p>
                     <p><span class="font-medium">Price:</span> {{ formatPrice(flight.price) }}</p>
                   </div>
                   <div v-if="flights.length > 1" class="mt-3 pt-3 border-t border-gray-300">
@@ -235,6 +235,7 @@
               <TripPackingList
                 ref="packingComponent"
                 :destination="trip.destination"
+                :trip-id="trip?.id"
                 @data-updated="updatePackingData"
               />
             </div>

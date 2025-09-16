@@ -15,19 +15,19 @@
         <div class="flex flex-col md:flex-row justify-between mb-4">
           <div class="space-y-2">
             <div class="flex items-center space-x-2">
-              <p class="text-xl font-bold text-gray-800">{{ flight.airline || 'Airline not specified' }}</p>
+              <p class="text-xl font-bold text-gray-800">{{ flight.airline + ' Airline' || 'Airline not specified' }}</p>
               <span v-if="flights.length > 1" class="text-sm bg-secondary1 text-secondary2 px-2 py-1 rounded-full">
                 Leg {{ flight.leg_number || (index + 1) }}
               </span>
             </div>
             <div class="flex items-center space-x-2">
               <span class="text-lg font-medium">{{ flight.from_city || flight.fromCity || 'Departure City' }}</span>
-              <span class="text-sm text-gray-500">({{ flight.from_iata || flight.fromIata || '---' }})</span>
+              
               <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
                 <path fill-rule="evenodd" d="M12.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-2.293-2.293a1 1 0 010-1.414z" clip-rule="evenodd" />
               </svg>
               <span class="text-lg font-medium">{{ flight.to_city || flight.toCity || 'Arrival City' }}</span>
-              <span class="text-sm text-gray-500">({{ flight.to_iata || flight.toIata || '---' }})</span>
+              
             </div>
           </div>
           <div class="text-right">
