@@ -87,7 +87,7 @@ const formatPrice = (price: number) => {
   return new Intl.NumberFormat('th-TH', { style: 'currency', currency: 'THB', minimumFractionDigits: 2 }).format(price);
 };
 
-// Generate budget analysis
+// Get budget analysis
 const generateBudgetAnalysis = async () => {
   try {
     const response = await axios.post('http://localhost:3002/api/gemini/generate', {

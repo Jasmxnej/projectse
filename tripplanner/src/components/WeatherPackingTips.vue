@@ -67,37 +67,37 @@ const emit = defineEmits(['add-to-packing']);
 const packingTips = ref<string[]>([]);
 const quickAddItems = ref<string[]>([]);
 
-// Generate packing tips based on weather data
+// Make packing tips from weather
 const generatePackingTips = async () => {
   if (!props.weatherData || props.weatherData.length === 0) return;
   
   try {
-    // Extract weather conditions
+    // Get weather info
     const conditions = props.weatherData.map(day => ({
       temp: day.temp,
       description: day.description,
       humidity: day.humidity
     }));
     
-    // Calculate average temperature
+    // Avg temp
     const avgTemp = conditions.reduce((sum, day) => sum + day.temp, 0) / conditions.length;
     
-    // Check for rain
-    const hasRain = conditions.some(day => 
-      day.description.toLowerCase().includes('rain') || 
+    // Has rain?
+    const hasRain = conditions.some(day =>
+      day.description.toLowerCase().includes('rain') ||
       day.description.toLowerCase().includes('shower')
     );
     
-    // Check for high humidity
+    // High humidity?
     const highHumidity = conditions.some(day => day.humidity > 70);
     
-    // Check for hot weather
+    // Hot weather?
     const isHot = avgTemp > 30;
     
-    // Check for cold weather
+    // Cold weather?
     const isCold = avgTemp < 15;
     
-    // Generate tips based on conditions
+    // Tips and items
     const tips: string[] = [];
     const items: string[] = [];
     
@@ -121,7 +121,7 @@ const generatePackingTips = async () => {
       items.push("Moisture-wicking clothes", "Anti-frizz hair product");
     }
     
-    // Add destination-specific weather-related tip if available
+    // Destination-specific tip
     if (props.destination) {
       try {
         const response = await axios.post('http://localhost:3002/api/gemini/generate', {
@@ -138,7 +138,7 @@ const generatePackingTips = async () => {
         if (response.data && response.data.text) {
           tips.push(response.data.text);
           
-          // Extract potential weather-related items from the response
+          // Find weather items in response
           const text = response.data.text.toLowerCase();
           const weatherItems = [
             "umbrella", "raincoat", "waterproof", "sunscreen", "hat", "sunglasses",

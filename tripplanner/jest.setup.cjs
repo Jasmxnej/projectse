@@ -61,6 +61,7 @@ global.import = {
     env: {
       VITE_GEMINI_API_KEY: 'test-api-key',
       // Add other environment variables as needed
-    }
+    },
+    url: 'file:///mock/path'
   }
 };

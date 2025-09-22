@@ -109,12 +109,12 @@ const props = defineProps({
 
 const emit = defineEmits(['edit', 'view-activity-details']);
 
-// Function to show activity details
+// Show activity details
 const showActivityDetails = (activity: Activity) => {
   emit('view-activity-details', activity);
 };
 
-// Function to truncate description text
+// Truncate description text
 const truncateDescription = (text: string | undefined): string => {
   if (!text) return '';
   return text.length > 100 ? text.substring(0, 100) : text;
@@ -137,7 +137,7 @@ const parseActivities = (activities: any[] | string): Activity[] => {
   return activities || [];
 };
 
-// Function to get the correct image URL with better fallback
+// Get activity image
 const getImageUrl = (activity: any) => {
   if (!activity) return getDefaultImage();
   
@@ -166,7 +166,7 @@ const getImageUrl = (activity: any) => {
   return getDefaultImage();
 };
 
-// Function to get a default image based on activity type or destination
+// Default image
 const getDefaultImage = () => {
   const defaultImages = [
     'https://images.unsplash.com/photo-1488646953014-85cb44e25828?ixlib=rb-4.0.3&auto=format&fit=crop&w=640&h=360&q=80', // Travel
@@ -176,13 +176,13 @@ const getDefaultImage = () => {
     'https://images.unsplash.com/photo-1513475382585-d06e58bcb0e0?ixlib=rb-4.0.3&auto=format&fit=crop&w=640&h=360&q=80'  // City
   ];
   
-  // Select a random default image
+  // Pick random default
   return defaultImages[Math.floor(Math.random() * defaultImages.length)];
 };
 
-// Function to fetch image for activity from Unsplash API
+// Fetch image from Unsplash
 const fetchImageForActivity = async (activity: any) => {
-  if (activity.imageLoading) return; // Prevent multiple requests
+  if (activity.imageLoading) return; // Stop multiple calls
   
   activity.imageLoading = true;
   
@@ -193,7 +193,7 @@ const fetchImageForActivity = async (activity: any) => {
     
     if (data.image) {
       activity.image = data.image;
-      // Force re-render by updating the activity object
+      // Update to re-render
       activity.imageLoaded = true;
     }
   } catch (error) {
@@ -206,16 +206,16 @@ const fetchImageForActivity = async (activity: any) => {
 const handleActivityImageError = (e: Event) => {
   const target = e.target as HTMLImageElement;
   if (target) {
-    // Extract the activity name from the alt attribute or use a default
+    // Get activity name from alt
     const activityName = target.alt || 'activity';
     const destination = props.destination || 'travel';
     
-    // Try to extract more context from parent elements
+    // Get context from parents
     const activityCard = target.closest('.border.border-gray-200');
     const activityTitle = activityCard?.querySelector('h4')?.textContent || activityName;
     const activityLocation = activityCard?.querySelector('p:nth-child(2)')?.textContent?.replace('📍', '') || '';
     
-    // Build a more specific search query
+    // Make search query
     let searchQuery = destination.toLowerCase();
     if (activityTitle && activityTitle !== 'activity') {
       searchQuery += `,${activityTitle.toLowerCase().split(' ')[0]}`;
@@ -224,18 +224,18 @@ const handleActivityImageError = (e: Event) => {
       searchQuery += `,${activityLocation.toLowerCase().split(' ')[0]}`;
     }
     
-    // Use featured images for better quality
+    // Use featured images
     target.src = `https://source.unsplash.com/featured/640x360/?${searchQuery}`;
     
-    // Add error handler to fallback to a generic image if the specific one fails
+    // Fallback error handler
     target.onerror = () => {
-      // Try a more generic search with the destination
+      // Generic search
       target.src = `https://source.unsplash.com/featured/640x360/?${destination.toLowerCase()},tourism`;
       
-      // Final fallback if that fails too
+      // Last fallback
       target.onerror = () => {
         target.src = 'https://source.unsplash.com/featured/640x360/?travel,activity';
-        // Remove the error handler to prevent infinite loop
+        // Stop loop
         target.onerror = null;
       };
     };

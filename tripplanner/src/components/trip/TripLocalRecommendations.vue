@@ -114,12 +114,12 @@ const props = defineProps({
 
 const emit = defineEmits(['data-updated']);
 
-// Local recommendations
+// Recs data
 const localRecommendations = ref<any[]>([]);
 const categorizedRecommendations = ref<any>({ categories: [] });
 const isLoading = ref(false);
 
-// Function to get the correct image URL
+// Get item image
 const getImageUrl = (item: any, categoryName: string) => {
   if (!item) return '';
 
@@ -168,7 +168,7 @@ const getImageUrl = (item: any, categoryName: string) => {
   return `https://via.placeholder.com/640x360/e5e7eb/6b7280?text=${encodeURIComponent(itemName)}`;
 };
 
-// Async function to load image from Unsplash API
+// Load Unsplash image
 const loadImageFromUnsplash = async (item: any, categoryName: string) => {
   const destination = props.destination || 'travel';
   const itemName = item.name || 'attraction';
@@ -206,7 +206,7 @@ const loadImageFromUnsplash = async (item: any, categoryName: string) => {
   }
 };
 
-// Function to get a clean category label
+// Clean category label
 const getCategoryLabel = (categoryName: string) => {
   if (categoryName.includes('Food')) return 'FOOD';
   if (categoryName.includes('Shopping')) return 'SHOPPING';
@@ -215,7 +215,7 @@ const getCategoryLabel = (categoryName: string) => {
   return categoryName.split(' ')[0].toUpperCase();
 };
 
-// Fetch local recommendations
+// Get recs
 const fetchLocalRecommendations = async () => {
   if (!props.destination) return;
   
@@ -320,7 +320,7 @@ const fetchLocalRecommendations = async () => {
   }
 };
 
-// Generate fallback recommendations if API fails
+// Fallback recs if API fails
 const generateFallbackRecommendations = () => {
   const destination = props.destination || 'Bangkok';
   
@@ -486,21 +486,21 @@ const handleRecommendationImageError = async (e: Event, item: any, categoryName:
     const itemName = item.name || target.alt || 'attraction';
     const destination = props.destination || 'travel';
 
-    // Prevent multiple API calls for the same item
+    // Stop extra API calls
     if (item.imageApiCalled) {
-      // Use placeholder if API was already called
+      // Use placeholder if API was called
       const placeholderUrl = `https://via.placeholder.com/640x360/e5e7eb/6b7280?text=${encodeURIComponent(itemName)}`;
       item.cachedImageUrl = placeholderUrl;
       target.src = placeholderUrl;
-      target.onerror = null; // Prevent infinite error loop
+      target.onerror = null; // Stop error loop
       item.imageLoaded = true;
       return;
     }
 
-    // Mark that we're attempting to fetch an image
+    // Mark API call
     item.imageApiCalled = true;
 
-    // Try to get a new image from Unsplash API with generic search
+    // Try Unsplash with basic search
     try {
       const searchTerms = `${itemName} ${destination} travel activity`;
       const response = await axios.get(`http://localhost:3002/api/unsplash/image?place=${encodeURIComponent(searchTerms)}&type=attraction`);
@@ -516,16 +516,16 @@ const handleRecommendationImageError = async (e: Event, item: any, categoryName:
       console.error('Error fetching fallback image from Unsplash API:', error);
     }
 
-    // Final fallback to placeholder
+    // Last resort placeholder
     const placeholderUrl = `https://via.placeholder.com/640x360/e5e7eb/6b7280?text=${encodeURIComponent(itemName)}`;
     item.cachedImageUrl = placeholderUrl;
     target.src = placeholderUrl;
-    target.onerror = null; // Prevent infinite error loop
+    target.onerror = null; // Stop error loop
     item.imageLoaded = true;
   }
 };
 
-// Generate recommendations when component is mounted
+// Get recs on load
 onMounted(() => {
   fetchLocalRecommendations();
 });

@@ -251,7 +251,7 @@ const estimatePrice = (distText: string, rate: number): string => {
 };
 
 const fetchDirections = async (origin: string, destination: string, mode: RouteOption['mode']): Promise<RouteOption> => {
-  // Always provide fallback
+  // Fallback data
   const fallbackDist = `${(2 + Math.random() * 6).toFixed(1)} km`; // Vary 2-8 km
   let fallbackDur: string, fallbackPrice: string;
   

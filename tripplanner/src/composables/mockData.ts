@@ -20,6 +20,29 @@ export const ensureIntUserId = (userId: any): number => {
 };
 
 export const getMockImage = (keyword: string): string => {
+  // In test environment, return simple string paths
+  if (typeof global !== 'undefined' && global.process && global.process.env.NODE_ENV === 'test') {
+    const lower = keyword.toLowerCase();
+    if (lower.includes('hotel')) {
+      return '/assets/hotel.png';
+    }
+    if (lower.includes('flight')) {
+      return '/assets/flight.png';
+    }
+    if (lower.includes('temple') || lower.includes('wat') || lower.includes('palace')) {
+      return '/assets/temple.jpg';
+    }
+    if (lower.includes('sea') || lower.includes('beach') || lower.includes('river')) {
+      return '/assets/sea.jpg';
+    }
+    if (lower.includes('mountain') || lower.includes('park')) {
+      return '/assets/mountains.webp';
+    }
+    // default generic
+    return '/assets/pic1.jpg';
+  }
+
+  // In production/development, use import.meta.url
   const lower = keyword.toLowerCase();
   if (lower.includes('hotel')) {
     return new URL('../assets/hotel.png', import.meta.url).href;

@@ -149,7 +149,7 @@ const formatPrice = (price: number) => {
   return new Intl.NumberFormat('th-TH', { style: 'currency', currency: 'THB', minimumFractionDigits: 2 }).format(price);
 };
 
-// Function to get the correct image URL using Unsplash API
+// Get hotel image
 const getImageUrl = (hotel: any) => {
   if (!hotel) return '';
 
@@ -185,8 +185,7 @@ const getImageUrl = (hotel: any) => {
     return `${window.location.origin}/${hotel.image}`;
   }
 
-  // Use a reliable hotel image as initial fallback
-  // The improved API will be used in the error handler
+  // Initial fallback hotel image
   return `https://images.unsplash.com/photo-1566073771259-6a8506099945?ixlib=rb-4.0.3&auto=format&fit=crop&w=640&h=360&q=80`;
 };
 
@@ -195,12 +194,12 @@ const handleImageError = async (e: Event) => {
   if (target && !target.dataset.apiCalled) {
     target.dataset.apiCalled = 'true';
 
-    // Extract the hotel name from the alt attribute or use a default
+    // Get hotel name from alt
     const hotelName = props.hotel?.name || target.alt || 'hotel';
     const destination = props.destination || 'resort';
 
     try {
-      // Try to get a better image from our improved Unsplash API
+      // Try better image from Unsplash
       const searchTerm = `${hotelName} ${destination}`;
       const response = await fetch(`http://localhost:3002/api/unsplash/image?place=${encodeURIComponent(searchTerm)}&type=hotel`);
       const data = await response.json();
@@ -213,13 +212,13 @@ const handleImageError = async (e: Event) => {
       console.error('Error fetching hotel image from API:', error);
     }
 
-    // Fallback to generic hotel images
+    // Fallback to generic hotel pic
     target.src = 'https://images.unsplash.com/photo-1566073771259-6a8506099945?ixlib=rb-4.0.3&auto=format&fit=crop&w=640&h=360&q=80';
 
-    // Add error handler to fallback to another generic image if the first fails
+    // Fallback error handler
     target.onerror = () => {
       target.src = 'https://images.unsplash.com/photo-1551882547-ff40c63fe5fa?ixlib=rb-4.0.3&auto=format&fit=crop&w=640&h=360&q=80';
-      // Remove the error handler to prevent infinite loop
+      // Stop loop
       target.onerror = null;
     };
   }

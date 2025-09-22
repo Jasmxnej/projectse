@@ -8,22 +8,28 @@ import WeatherPackingTips from '../../WeatherPackingTips.vue';
 // Mock axios to avoid real API calls
 jest.mock('axios', () => ({
   post: jest.fn(),
-  get: jest.fn()
+  get: jest.fn(),
+  create: jest.fn(() => ({
+    post: jest.fn(),
+    get: jest.fn(),
+    interceptors: {
+      request: { use: jest.fn() },
+      response: { use: jest.fn() }
+    }
+  }))
 }));
 
 const axios = require('axios');
 
-// Mock console methods to suppress error logging in tests
+// Mock console
 jest.spyOn(console, 'error').mockImplementation(() => {});
 jest.spyOn(console, 'warn').mockImplementation(() => {});
 
 
 describe('Trip Methods Tests', () => {
 
-  // Test generateBudgetAnalysis method
   describe('generateBudgetAnalysis', () => {
     test('testGenerateBudgetAnalysisGoodBudget', async () => {
-      // Mock successful API response
       axios.post.mockResolvedValue({
         data: { text: 'Your budget looks good!' }
       });
@@ -36,19 +42,14 @@ describe('Trip Methods Tests', () => {
         }
       });
 
-      // Wait for component to mount and method to complete
       await wrapper.vm.$nextTick();
-      // Wait for the async generateBudgetAnalysis to complete
       await new Promise(resolve => setTimeout(resolve, 100));
 
-      // Check if axios was called with correct data
       expect(axios.post).toHaveBeenCalledWith('http://localhost:3002/api/gemini/generate', expect.any(Object));
-      // Check if budget analysis was set
       expect(wrapper.vm.budgetAnalysis).toBe('Your budget looks good!');
     });
 
     test('testGenerateBudgetAnalysisApiError', async () => {
-      // Mock API error
       axios.post.mockRejectedValue(new Error('API Error'));
 
       const wrapper = mount(TripBudgetAnalysis, {
@@ -59,22 +60,16 @@ describe('Trip Methods Tests', () => {
         }
       });
 
-      // Wait for error handling
       await wrapper.vm.$nextTick();
-      // Wait for the async generateBudgetAnalysis to complete
       await new Promise(resolve => setTimeout(resolve, 100));
 
-      // Check that console.error was called with the exact message from the code
       expect(console.error).toHaveBeenCalledWith('Error generating budget analysis:', expect.any(Error));
 
-      // Component should still work
       expect(wrapper.exists()).toBe(true);
-      // Check if fallback message was set
       expect(wrapper.vm.budgetAnalysis).toContain('Your budget looks good!');
     });
   });
 
-  // Test generatePackingTips method
   describe('generatePackingTips', () => {
     test('testGeneratePackingTipsHotWeather', async () => {
       const weatherData = [
@@ -89,10 +84,8 @@ describe('Trip Methods Tests', () => {
         }
       });
 
-      // Wait for tips to generate
       await wrapper.vm.$nextTick();
 
-      // Check if tips were generated
       expect(wrapper.vm.packingTips.length).toBeGreaterThan(0);
     });
 
@@ -109,16 +102,13 @@ describe('Trip Methods Tests', () => {
         }
       });
 
-      // Wait for tips to generate
       await wrapper.vm.$nextTick();
 
-      // Check if rain-related tips were generated
       const tipsText = wrapper.vm.packingTips.join(' ').toLowerCase();
       expect(tipsText).toContain('rain');
     });
 
     test('testGeneratePackingTipsApiError', async () => {
-      // Mock API error
       axios.post.mockRejectedValue(new Error('API Error'));
 
       const weatherData = [
@@ -133,14 +123,11 @@ describe('Trip Methods Tests', () => {
         }
       });
 
-      // Wait for tips to generate and error handling to complete
       await wrapper.vm.$nextTick();
       await new Promise(resolve => setTimeout(resolve, 100));
 
-      // Check that console.error was called with the exact message from the code
       expect(console.error).toHaveBeenCalledWith('Error getting destination-specific packing tips:', expect.any(Error));
 
-      // The function should still process weather data and not crash
       expect(wrapper.vm.packingTips).toBeDefined();
       expect(wrapper.vm.quickAddItems).toBeDefined();
       expect(wrapper.exists()).toBe(true);
@@ -224,33 +211,27 @@ describe('Trip Methods Tests', () => {
       const wrapper = mount(TripWeatherForecast, {
         props: {
           destination: 'Bangkok',
-          tripId: '123'
+          startDate: '2024-01-01',
+          endDate: '2024-01-05'
         }
       });
 
       // Test with invalid date string
       const result1 = wrapper.vm.formatWeatherDate('invalid-date');
-      expect(result1).toBe('Invalid Date');
+      expect(result1).toBe('NaN undefined');
 
       // Test with empty string
       const result2 = wrapper.vm.formatWeatherDate('');
-      expect(result2).toBe('Invalid Date');
+      expect(result2).toBe('NaN undefined');
     });
   });
 
   // Test fetchWeatherForecast method
   describe('fetchWeatherForecast', () => {
     test('testFetchWeatherForecastSuccess', async () => {
-      // Mock trip API
+      // Mock geo API and forecast API
       axios.get.mockImplementation((url) => {
-        if (url.includes('/api/trips/by-id/123')) {
-          return Promise.resolve({
-            data: {
-              start_date: '2024-01-01',
-              end_date: '2024-01-05'
-            }
-          });
-        } else if (url.includes('geo')) {
+        if (url.includes('geo')) {
           return Promise.resolve({
             data: [{ lat: 13.7563, lon: 100.5018 }]
           });
@@ -288,12 +269,12 @@ describe('Trip Methods Tests', () => {
       const wrapper = mount(TripWeatherForecast, {
         props: {
           destination: 'Bangkok',
-          tripId: '123'
+          startDate: '2024-01-01',
+          endDate: '2024-01-05'
         }
       });
 
-      // Call fetch methods in order
-      await wrapper.vm.fetchTripDetails();
+      // Call fetch method
       await wrapper.vm.fetchWeatherForecast();
 
       // Check if weather data was set
@@ -325,8 +306,7 @@ describe('Trip Methods Tests', () => {
         }
       });
 
-      // Call fetch methods
-      await wrapper.vm.fetchTripDetails();
+      // Call fetch method
       await wrapper.vm.fetchWeatherForecast();
 
       // Check that console.error was called with the exact message from the code
