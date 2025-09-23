@@ -4,6 +4,7 @@ import TripWeatherForecast from '../TripWeatherForecast.vue';
 import TripLocalRecommendations from '../TripLocalRecommendations.vue';
 import TripPackingList from '../TripPackingList.vue';
 import WeatherPackingTips from '../../WeatherPackingTips.vue';
+import TravelPlugInfo from '../TravelPlugInfo.vue';
 
 // Mock axios to avoid real API calls
 jest.mock('axios', () => ({
@@ -680,6 +681,80 @@ describe('Trip Methods Tests', () => {
       // Check if item was still added (should work despite API error due to localStorage fallback)
       expect(wrapper.vm.categorizedPackingList.categories[0].items.length).toBe(1);
       expect(wrapper.vm.categorizedPackingList.categories[0].items[0].name).toBe('Phone Charger');
+    });
+  });
+
+  // Test getPlugInfo method from TravelPlugInfo component
+  describe('getPlugInfo', () => {
+    test('testGetPlugInfoReturnsStringForKnownDestination', async () => {
+      const wrapper = mount(TravelPlugInfo, {
+        props: {
+          destination: 'Bangkok'
+        }
+      });
+
+      // Call the exposed getPlugInfo method
+      const result = await wrapper.vm.getPlugInfo('Bangkok');
+
+      // Check that it returns a string
+      expect(typeof result).toBe('string');
+
+      // Check that the string contains expected information for Thailand
+      expect(result).toContain('Plug Types: A, B, C, O');
+      expect(result).toContain('Voltage: 220V');
+      expect(result).toContain('Frequency: 50Hz');
+      expect(result).toContain('Thailand primarily uses Type O');
+
+      // Clean up
+      wrapper.unmount();
+    });
+
+    test('testGetPlugInfoReturnsStringForUnknownDestination', async () => {
+      // Mock axios to simulate API error for unknown destination
+      axios.post.mockRejectedValue(new Error('API Error'));
+
+      const wrapper = mount(TravelPlugInfo, {
+        props: {
+          destination: 'Unknown City'
+        }
+      });
+
+      // Call the exposed getPlugInfo method
+      const result = await wrapper.vm.getPlugInfo('Unknown City');
+
+      // Check that it returns a string even for unknown destinations
+      expect(typeof result).toBe('string');
+
+      // Check that it contains default information
+      expect(result).toContain('Plug Types: Various');
+      expect(result).toContain('Voltage: 110-240V');
+      expect(result).toContain('Frequency: 50/60Hz');
+
+      // Clean up
+      wrapper.unmount();
+    });
+
+    test('testGetPlugInfoReturnsStringForCityMapping', async () => {
+      const wrapper = mount(TravelPlugInfo, {
+        props: {
+          destination: 'Tokyo'
+        }
+      });
+
+      // Call the exposed getPlugInfo method
+      const result = await wrapper.vm.getPlugInfo('Tokyo');
+
+      // Check that it returns a string
+      expect(typeof result).toBe('string');
+
+      // Check that the string contains expected information for Japan
+      expect(result).toContain('Plug Types: A, B');
+      expect(result).toContain('Voltage: 100V');
+      expect(result).toContain('Frequency: 50/60Hz');
+      expect(result).toContain('Japan uses Type A');
+
+      // Clean up
+      wrapper.unmount();
     });
   });
 });

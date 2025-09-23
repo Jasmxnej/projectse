@@ -147,15 +147,16 @@ const defaultPlugInfo = {
 };
 
 // Function to get plug information for a destination
-const getPlugInfo = async (destination: string) => {
+const getPlugInfo = async (destination: string): Promise<string> => {
   isLoading.value = true;
-  
+
   try {
     // Try to match the destination with known countries
     const country = findMatchingCountry(destination);
-    
+
+    let plugData: any;
     if (country && plugTypeMap[country]) {
-      plugInfo.value = plugTypeMap[country];
+      plugData = plugTypeMap[country];
     } else {
       // If no direct match, try to get information from an AI service
       try {
@@ -163,7 +164,7 @@ const getPlugInfo = async (destination: string) => {
           prompt: {
             contents: [{
               parts: [{
-                text: `What power plug types, voltage, and frequency are used in ${destination}? 
+                text: `What power plug types, voltage, and frequency are used in ${destination}?
                 Provide the information in this JSON format:
                 {
                   "types": ["A", "B"], // Array of plug type letters
@@ -176,39 +177,47 @@ const getPlugInfo = async (destination: string) => {
           },
           apiKey: import.meta.env.VITE_GEMINI_API_KEY,
         });
-        
+
         if (response.data) {
           try {
             // Try to parse the response as JSON
             if (typeof response.data === 'object' && response.data.types) {
-              plugInfo.value = response.data;
+              plugData = response.data;
             } else if (response.data.text) {
               // Extract JSON from text response
               const jsonMatch = response.data.text.match(/\{[\s\S]*\}/);
               if (jsonMatch) {
                 const parsedData = JSON.parse(jsonMatch[0]);
-                plugInfo.value = parsedData;
+                plugData = parsedData;
               } else {
-                plugInfo.value = defaultPlugInfo;
+                plugData = defaultPlugInfo;
               }
             } else {
-              plugInfo.value = defaultPlugInfo;
+              plugData = defaultPlugInfo;
             }
           } catch (parseError) {
             console.error('Error parsing plug info:', parseError);
-            plugInfo.value = defaultPlugInfo;
+            plugData = defaultPlugInfo;
           }
         } else {
-          plugInfo.value = defaultPlugInfo;
+          plugData = defaultPlugInfo;
         }
       } catch (aiError) {
         console.error('Error getting plug info from AI:', aiError);
-        plugInfo.value = defaultPlugInfo;
+        plugData = defaultPlugInfo;
       }
     }
+
+    // Set the ref for component display
+    plugInfo.value = plugData;
+
+    // Return formatted string
+    return `Plug Types: ${plugData.types.join(', ')}, Voltage: ${plugData.voltage}, Frequency: ${plugData.frequency}. ${plugData.description}`;
+
   } catch (error) {
     console.error('Error getting plug information:', error);
     plugInfo.value = defaultPlugInfo;
+    return `Plug Types: ${defaultPlugInfo.types.join(', ')}, Voltage: ${defaultPlugInfo.voltage}, Frequency: ${defaultPlugInfo.frequency}. ${defaultPlugInfo.description}`;
   } finally {
     isLoading.value = false;
   }
